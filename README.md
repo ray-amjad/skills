@@ -18,4 +18,4 @@ MIT — see [LICENSE](./LICENSE).
 
 ## Credits
 
-- [`mermaid-diagram-generator`](./skills/mermaid-diagram-generator) is adapted from the [mermaid-diagram-plugin](https://github.com/agentic-coding-school/mermaid-diagram-plugin) by Agentic Coding School.
+- [`mermaid-diagram-generator`](./skills/mermaid-diagram-generator) — interactive editor and adaptive interview features by [@rrmaram2000](https://github.com/rrmaram2000).
