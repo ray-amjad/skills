@@ -45,7 +45,7 @@ cmux send-key --workspace <ws> --surface <new surface> Enter
 
 `--focus false` matters. Without it the UI jumps to the new pane, and the user's next keystrokes go to the peer.
 
-Tear it down with `cmux close-surface --workspace <ws> --surface <uuid>`, one call per pane. Never `close-workspace` — that workspace is the user's.
+Teardown stays off by default here too (SKILL.md section 4). Once the user asks: `cmux close-surface --workspace <ws> --surface <uuid>`, one call per pane, after you kill the PIDs. Never `close-workspace` — that workspace is the user's.
 
 ## One workspace, two sessions
 

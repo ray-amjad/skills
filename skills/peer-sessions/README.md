@@ -2,7 +2,7 @@
 
 Run a fleet of Claude Code sessions on one machine and make them talk to each other with `SendMessage`.
 
-A message sent between sessions arrives as a **user prompt** in the receiving session. This skill turns that primitive into a working loop: spawn a fleet, hand out briefs, end your turn, collect the replies, tear it down.
+A message sent between sessions arrives as a **user prompt** in the receiving session. This skill turns that primitive into a working loop: spawn a fleet, hand out briefs, end your turn, collect the replies, and tear it down when you ask (teardown is off by default).
 
 `--placement split|workspace|window` decides where the fleet appears — panes beside your own pane, new workspaces in your window, or a new window.
 

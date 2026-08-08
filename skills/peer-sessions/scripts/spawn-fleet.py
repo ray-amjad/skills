@@ -111,7 +111,8 @@ def print_cleanup(records, layout):
     pids = sorted(
         {record.get("pid") for record in records if isinstance(record.get("pid"), int)}
     )
-    print("\nSafe teardown (kill processes before closing their UI):")
+    print("\nTeardown is off by default: hand this block to the user, and run it")
+    print("only when they ask. Kill the processes before closing their UI:")
     if pids:
         print("  kill " + " ".join(str(pid) for pid in pids))
     else:

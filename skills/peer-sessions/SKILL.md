@@ -1,13 +1,13 @@
 ---
 name: peer-sessions
-description: Run a fleet of Claude Code sessions on this machine and make them talk to each other with SendMessage — from Claude Code itself or through a real Claude relay when the caller is Codex. Launch them in cmux windows, panes and splits, address them correctly, hand out work, collect or recover replies, and tear them down cleanly. Use whenever the user wants two or more Claude sessions working together, asks Codex to contact an existing Claude session, mentions SendMessage, ListAgents, peer sessions, cross-session messaging, or agents messaging each other; whenever they want sessions in new windows, workspaces, panes or splits; and especially when a send fails with "not an agent in this conversation", "re-send with the ref", or the caller lacks Claude's native messaging socket.
+description: Run a fleet of Claude Code sessions on this machine and make them talk to each other with SendMessage — from Claude Code itself or through a real Claude relay when the caller is Codex. Launch them in cmux windows, panes and splits, address them correctly, hand out work, collect or recover replies, and tear them down cleanly when the user asks. Use whenever the user wants two or more Claude sessions working together, asks Codex to contact an existing Claude session, mentions SendMessage, ListAgents, peer sessions, cross-session messaging, or agents messaging each other; whenever they want sessions in new windows, workspaces, panes or splits; and especially when a send fails with "not an agent in this conversation", "re-send with the ref", or the caller lacks Claude's native messaging socket.
 ---
 
 # Peer sessions
 
 Claude Code sessions on this machine can send messages to each other. A message becomes a **user prompt** in the receiving session. This one fact explains each rule below.
 
-The loop: spawn a fleet → send a brief to each peer → end your turn → replies arrive as new user turns → tear down.
+The loop: spawn a fleet → send a brief to each peer → end your turn → replies arrive as new user turns → leave the fleet up and hand the user the teardown. Teardown is opt-in; section 4 says when you run it yourself.
 
 ## 1. Spawn
 
@@ -69,9 +69,17 @@ When the briefs are out, **stop**. A peer reply IS the notification. The reply a
 
 Codex has no native `SendMessage` tool and no messaging socket. Never fake or implement the Unix-socket protocol — use a real temporary Claude Code session as the relay, and recover truncated replies from transcripts with `scripts/peer-inbox.py`. Read `references/codex-bridge.md` before operating this path.
 
-## 4. Tear down
+## 4. Tear down — off by default
 
-**When you close the UI, the sessions do not stop.** Every cmux close command returns `OK` and each `claude` process stays alive as an addressable orphan. So: **kill first, close second**, then confirm with `peer-addr.py`.
+**Teardown is opt-in.** When the work is done, leave the fleet running and hand the user the teardown block the spawn script printed. A live peer keeps its context, so a follow-up question costs one message instead of a whole re-spawn. The user decides when the sessions stop. Say plainly that the fleet is still up and what it costs to leave it there.
+
+Run the teardown yourself only when one of these holds:
+
+- The user asks now — "tear it down", "clean up the fleet", "close those sessions".
+- The user asked up front, at spawn time — "close them when you're done".
+- The session is your own plumbing rather than the user's work: the temporary Codex relay in `references/codex-bridge.md`. Kill that relay PID only, never the target it messaged.
+
+When you do tear down: **closing the UI does not stop the sessions.** Every cmux close command returns `OK` and each `claude` process stays alive as an addressable orphan. So: **kill first, close second**, then confirm with `peer-addr.py`.
 
 Run the teardown the spawn script printed — it matches the placement and uses durable UUIDs. Close only what you made: a `split` fleet sits in the user's own workspace, so closing that workspace closes the user's work too. Hand-written teardown syntax: `references/placement.md`.
 

@@ -24,6 +24,8 @@ Read this when you choose a `spawn-fleet.py` placement, need a non-default flag,
 
 ## Teardown syntax per placement
 
+Teardown is off by default (SKILL.md section 4). These are the commands you hand the user, and the commands you run once the user asks.
+
 The spawn script prints the exact teardown with real UUIDs. When you must write it by hand:
 
 ```bash
