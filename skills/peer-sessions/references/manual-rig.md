@@ -6,6 +6,47 @@ Read this when `spawn-fleet.py` does not fit: unusual layouts, filming, forks, o
 
 A **window** holds workspaces. A workspace holds panes. A pane holds a **surface** (the terminal that you type into). Workspaces and surfaces use short refs (`workspace:26`, `surface:93`). Windows use full UUIDs.
 
+**A ref is an index, not an identity.** Close one surface and the rest renumber, so a ref that you saved a minute ago can now point at another pane. Ask for UUIDs and hold those instead:
+
+```bash
+cmux --id-format both new-split right --workspace W --surface S --focus false
+# → OK surface:22 (BFB087B6-...) workspace:10 (CCA4E168-...)
+```
+
+`--id-format` goes before the subcommand. It takes `refs`, `uuids`, or `both`. Two commands ignore it: `new-workspace` prints a ref only (trade it for a UUID with `cmux --id-format both tree --all`), and `new-window` prints a UUID only.
+
+## Where am I?
+
+```bash
+cmux --id-format both identify
+```
+
+`caller` is the pane that ran the command. `focused` is the pane the user looks at. They differ often, so build from `caller`:
+
+```json
+"caller": { "window_id": "888C66E8-...", "workspace_id": "CCA4E168-...",
+            "surface_id": "C087AFB0-...", "pane_ref": "pane:11" }
+```
+
+This is how `spawn-fleet.py --placement split` finds the pane to split, and how `--placement workspace` finds the window to build in.
+
+## A session beside your own pane
+
+This is what `--placement split` does. Split your own surface, then chain each next split off the pane you just made, so the panes line up in order:
+
+```bash
+cmux --id-format both new-split right \
+  --workspace <caller workspace_id> --surface <caller surface_id> --focus false
+# → OK surface:22 (BFB087B6-...) workspace:10 (CCA4E168-...)
+
+cmux send     --workspace <ws> --surface <new surface> "cd /tmp/lab && claude --name alpha --permission-mode auto"
+cmux send-key --workspace <ws> --surface <new surface> Enter
+```
+
+`--focus false` matters. Without it the UI jumps to the new pane, and the user's next keystrokes go to the peer.
+
+Tear it down with `cmux close-surface --workspace <ws> --surface <uuid>`, one call per pane. Never `close-workspace` — that workspace is the user's.
+
 ## One workspace, two sessions
 
 ```bash

@@ -48,5 +48,8 @@ In order of likelihood:
 - `claude agents` needs a TTY. Use `claude agents --json` for scripts. The list contains your own session — check the pid before you kill a process.
 - `logs`, `stop`, and `attach` are not claude subcommands. Claude reads unknown words as prompts and starts work. Use `kill <pid>`.
 - When you close a cmux pane, workspace, or window, the claude process inside does not stop. See the teardown in SKILL.md.
-- `cmux close-window` can return `OK` and not close the window. This happens even for an empty window, and a retry does not always help. If the window stays in `cmux list-windows`, tell the user to close it by hand (Cmd+W).
-- `cmux list-workspaces --window X` ignores the `--window` flag. The command always shows the current window.
+- `cmux close-window` can return `OK` and not close the window. This happens even for an empty window, and a retry does not always help. If the window stays in `cmux list-windows`, tell the user to close it by hand (Cmd+W). Prefer `--placement split` or `--placement workspace`, which tear down from the CLI every time.
+- `cmux new-window` opens with a default shell workspace of its own. A one-session `--placement window` fleet therefore shows two workspaces.
+- A window keeps its last workspace. `close-workspace` on the final one returns `OK` and the workspace stays.
+- `cmux list-workspaces --window X` ignores the `--window` flag. The command always shows the current window. Use `cmux tree --all` to see every window.
+- Surface and workspace refs are indexes. Each close renumbers them, and `close-surface` even reports a ref that the close itself shifted. Hold UUIDs (`cmux --id-format both`) for anything you plan to close later.

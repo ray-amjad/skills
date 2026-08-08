@@ -1,127 +1,168 @@
 #!/usr/bin/env python3
-"""Show peer-messaging addresses for Claude Code sessions on this machine.
+"""List live Claude Code sessions and verified peer-messaging addresses."""
 
-  peer-addr.py         list live sessions and whether each is addressable
-  peer-addr.py --me    print this session's own uds: address, for replies
-
-Sessions register at ~/.claude/sessions/<pid>.json. A session is addressable
-only if it published a messaging socket, which requires Claude Code 2.1.224 or
-newer — an older session is alive and healthy but invisible to SendMessage.
-"""
-
-import glob
+import argparse
 import json
 import os
-import socket
-import subprocess
 import sys
 
-SESSIONS = os.path.expanduser("~/.claude/sessions")
+from peer_registry import (
+    load_records,
+    normalized_name,
+    parse_version,
+    pid_alive,
+    socket_status,
+)
+
+
 MIN_VERSION = (2, 1, 224)
 NAME_MAX = 40
 
 
-def parse_version(v):
-    try:
-        return tuple(int(p) for p in str(v).split(".")[:3])
-    except (TypeError, ValueError):
-        return (0, 0, 0)
+def row_for(record, own_sock):
+    pid = record.get("pid")
+    sock = record.get("messagingSocketPath") or ""
+    version = record.get("version", "?")
+    if not sock:
+        state = "unreachable"
+        if parse_version(version) < MIN_VERSION:
+            reason = "no socket — build predates 2.1.224 (claude --resume to fix)"
+        else:
+            reason = "no socket — messaging gate off, bind failed, or a thin/bare session"
+    elif sock == own_sock:
+        state = "self"
+        reason = "this session"
+    else:
+        status = socket_status(sock)
+        if status == "live":
+            state = "reachable"
+            reason = f"uds:{sock}"
+        elif status == "denied":
+            state = "unverified"
+            reason = "socket check denied by sandbox — rerun with process/socket access"
+        else:
+            state = "unreachable"
+            reason = "socket present but not answering (stale — peer may have crashed)"
+
+    return {
+        "state": state,
+        "name": normalized_name(record),
+        "pid": pid,
+        "version": version,
+        "address": f"uds:{sock}" if state in ("reachable", "self") else None,
+        "socketPath": sock or None,
+        "reason": reason,
+        "sessionId": record.get("sessionId"),
+        "cwd": record.get("cwd"),
+        "status": record.get("status"),
+        "startedAt": record.get("startedAt"),
+    }
 
 
-def pid_alive(pid):
-    return subprocess.run(["ps", "-p", str(pid)], capture_output=True).returncode == 0
-
-
-def socket_live(path, timeout=0.25):
-    """Connecting is the only honest liveness check — the file can outlive the process."""
-    if not path or not os.path.exists(path):
-        return False
-    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    s.settimeout(timeout)
-    try:
-        s.connect(path)
-        return True
-    except OSError:
-        return False
-    finally:
-        s.close()
-
-
-def load_records():
-    out = []
-    for f in sorted(glob.glob(os.path.join(SESSIONS, "*.json"))):
-        try:
-            with open(f) as fh:
-                out.append(json.load(fh))
-        except (OSError, ValueError):
-            continue
-    return out
-
-
-def me():
+def me(as_json=False):
     own_sock = os.environ.get("CLAUDE_CODE_MESSAGING_SOCKET")
     if not own_sock:
-        print("No CLAUDE_CODE_MESSAGING_SOCKET in this environment.")
-        print("Either this build predates 2.1.224 or cross-session messaging is off.")
+        message = (
+            "No CLAUDE_CODE_MESSAGING_SOCKET in this environment. "
+            "Either this build predates 2.1.224 or cross-session messaging is off."
+        )
+        if as_json:
+            print(json.dumps({"error": message}))
+        else:
+            print(message)
         return 1
 
-    print(f"uds:{own_sock}")
-    for rec in load_records():
-        if rec.get("messagingSocketPath") == own_sock:
-            sid = rec.get("sessionId")
-            if sid:
-                # Needed for --resume/--fork-session, not for messaging.
-                print(f"session-id: {sid}")
-            return 0
-    print("(no registry record found for this socket)")
+    record = next(
+        (r for r in load_records() if r.get("messagingSocketPath") == own_sock), None
+    )
+    payload = {
+        "address": f"uds:{own_sock}",
+        "sessionId": record.get("sessionId") if record else None,
+    }
+    if as_json:
+        print(json.dumps(payload, indent=2))
+    else:
+        print(payload["address"])
+        if payload["sessionId"]:
+            print(f"session-id: {payload['sessionId']}")
+        else:
+            print("(no registry record found for this socket)")
     return 0
 
 
-def listing():
+def listing(name_filter=None, pid_filter=None, details=False, as_json=False):
     own_sock = os.environ.get("CLAUDE_CODE_MESSAGING_SOCKET")
     rows = []
-    for rec in load_records():
-        pid = rec.get("pid")
-        if not isinstance(pid, int) or not pid_alive(pid):
+    for record in load_records():
+        pid = record.get("pid")
+        if not pid_alive(pid):
             continue
-        sock = rec.get("messagingSocketPath") or ""
-        version = rec.get("version", "?")
-        if not sock:
-            state = "unreachable"
-            if parse_version(version) < MIN_VERSION:
-                why = "no socket — build predates 2.1.224 (claude --resume to fix)"
-            else:
-                why = "no socket — messaging gate off, bind failed, or a thin/bare session"
-        elif sock == own_sock:
-            why = "this session"
-            state = "self"
-        elif socket_live(sock):
-            why = f"uds:{sock}"
-            state = "reachable"
-        else:
-            why = "socket present but not answering (stale — peer may have crashed)"
-            state = "unreachable"
-        # Names come from --name or are derived, so they can be a whole sentence.
-        name = " ".join((rec.get("name") or "(unnamed)").split())
-        if len(name) > NAME_MAX:
-            name = name[: NAME_MAX - 1] + "…"
-        rows.append((state, name, pid, version, why))
+        name = normalized_name(record)
+        if name_filter is not None and name != name_filter:
+            continue
+        if pid_filter is not None and pid != pid_filter:
+            continue
+        rows.append(row_for(record, own_sock))
+
+    rows.sort(
+        key=lambda row: (
+            {"reachable": 0, "self": 1, "unverified": 2, "unreachable": 3}[
+                row["state"]
+            ],
+            row["name"],
+            row["pid"],
+        )
+    )
+    reachable = sum(1 for row in rows if row["state"] == "reachable")
+
+    if as_json:
+        print(json.dumps({"sessions": rows, "reachablePeers": reachable}, indent=2))
+        return 0 if rows or (name_filter is None and pid_filter is None) else 1
 
     if not rows:
+        if name_filter is not None or pid_filter is not None:
+            print("No live Claude Code sessions matched the requested filters.")
+            return 1
         print("No live Claude Code sessions registered on this machine.")
         return 0
 
-    rows.sort(key=lambda r: ({"reachable": 0, "self": 1, "unreachable": 2}[r[0]], r[1]))
-    width = max(len(r[1]) for r in rows)
-    marks = {"reachable": "+", "self": ".", "unreachable": "-"}
-    for state, name, pid, version, why in rows:
-        print(f"{marks[state]} {name:<{width}}  pid {pid:<7} v{version:<9} {why}")
+    width = min(NAME_MAX, max(len(row["name"]) for row in rows))
+    marks = {"reachable": "+", "self": ".", "unverified": "?", "unreachable": "-"}
+    for row in rows:
+        name = row["name"]
+        if len(name) > NAME_MAX:
+            name = name[: NAME_MAX - 1] + "…"
+        print(
+            f"{marks[row['state']]} {name:<{width}}  pid {row['pid']:<7} "
+            f"v{row['version']:<9} {row['reason']}"
+        )
+        if details:
+            print(
+                f"    session {row['sessionId'] or '?'}  status {row['status'] or '?'}  "
+                f"cwd {row['cwd'] or '?'}"
+            )
 
-    n = sum(1 for r in rows if r[0] == "reachable")
-    print(f"\n{n} reachable peer{'' if n == 1 else 's'}. "
-          "Send with the bare name from ListAgents, or the uds: address shown above.")
+    print(
+        f"\n{reachable} reachable peer{'' if reachable == 1 else 's'}. "
+        "Send with the bare name from ListAgents, or the uds: address shown above."
+    )
     return 0
 
 
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--me", action="store_true", help="show this session's address")
+    parser.add_argument("--name", help="show sessions with this exact normalized name")
+    parser.add_argument("--pid", type=int, help="show only this process ID")
+    parser.add_argument("--details", action="store_true", help="include cwd, status and session ID")
+    parser.add_argument("--json", action="store_true", help="emit machine-readable JSON")
+    args = parser.parse_args()
+    if args.me and (args.name is not None or args.pid is not None or args.details):
+        parser.error("--me cannot be combined with --name, --pid, or --details")
+    if args.me:
+        return me(args.json)
+    return listing(args.name, args.pid, args.details, args.json)
+
+
 if __name__ == "__main__":
-    sys.exit(me() if "--me" in sys.argv[1:] else listing())
+    sys.exit(main())

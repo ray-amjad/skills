@@ -1,77 +1,68 @@
 #!/usr/bin/env python3
-"""Launch a fleet of Claude Code sessions in cmux and print their addresses.
-
-  spawn-fleet.py NAME:DIR [NAME:DIR ...] [--window] [--per-workspace N] [options]
-
-Each NAME:DIR becomes a session named NAME running in DIR. Sessions are packed
-into workspaces (2 per workspace by default, side by side), and the script waits
-until every one has published a messaging socket before printing.
-
-Examples:
-  spawn-fleet.py orbits:/tmp/lab/orbits planets:/tmp/lab/planets
-  spawn-fleet.py --window a:/tmp/a b:/tmp/b c:/tmp/c d:/tmp/d
-  spawn-fleet.py --model sonnet --claude-arg --effort=low w1:/tmp/w1 w2:/tmp/w2
-
-Options:
-  --window            put the fleet in a NEW cmux window (keeps it out of the
-                      user's own tabs; close it later with close-window)
-  --per-workspace N   sessions per workspace, 1 or 2 (default 2)
-  --prefix NAME       workspace name prefix (default "fleet")
-  --model M           passed to every session as --model M
-  --claude-arg ARG    extra arg for every session; repeatable
-  --timeout SECS      how long to wait for sockets (default 120)
-  --permission-mode M default "auto" — see the skill on why bypass breaks messaging
-
-Prints one line per ready session, then a SendMessage-able address list. Exits
-non-zero if any session fails to come up, and says which.
-"""
+"""Launch named Claude Code sessions in cmux and verify their live sockets."""
 
 import argparse
 import json
 import os
+import re
 import shlex
 import subprocess
 import sys
 import time
 
-SESSIONS = os.path.expanduser("~/.claude/sessions")
+from peer_registry import live_records, normalized_name, record_identity, socket_live
+
+
+UUID = re.compile(r"^[0-9A-Fa-f]{8}(-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}$")
 
 
 def cmux(*args):
-    """Run a cmux command, returning stdout. Raises with cmux's own message on failure."""
-    r = subprocess.run(["cmux", *args], capture_output=True, text=True)
-    out = (r.stdout + r.stderr).strip()
-    if r.returncode != 0 or out.startswith("Error"):
-        raise RuntimeError(f"cmux {' '.join(args)}\n  → {out}")
-    return out
+    """Run cmux and ask for UUIDs beside refs. Refs renumber; UUIDs do not."""
+    result = subprocess.run(
+        ["cmux", "--id-format", "both", *args], capture_output=True, text=True
+    )
+    output = (result.stdout + result.stderr).strip()
+    if result.returncode != 0 or output.startswith("Error"):
+        raise RuntimeError(f"cmux {' '.join(args)}\n  → {output}")
+    return output
 
 
-def ref_from(out, kind):
-    """cmux prints things like 'OK surface:107 workspace:32' — pull out one ref."""
-    for tok in out.split():
-        if tok.startswith(f"{kind}:"):
-            return tok
-    raise RuntimeError(f"no {kind} ref in cmux output: {out!r}")
-
-
-def live_sockets():
-    """Map session name → socket path for every registered live session."""
-    found = {}
-    if not os.path.isdir(SESSIONS):
-        return found
-    for fn in os.listdir(SESSIONS):
-        if not fn.endswith(".json"):
+def id_from(output, kind):
+    """Take the durable id for `kind` out of `OK surface:22 (UUID) workspace:10 (UUID)`."""
+    tokens = output.replace("(", " ").replace(")", " ").split()
+    for index, token in enumerate(tokens):
+        if not token.startswith(f"{kind}:"):
             continue
-        try:
-            with open(os.path.join(SESSIONS, fn)) as fh:
-                rec = json.load(fh)
-        except (OSError, ValueError):
-            continue
-        sock = rec.get("messagingSocketPath")
-        name = rec.get("name")
-        if sock and name and os.path.exists(sock):
-            found[name] = sock
-    return found
+        if index + 1 < len(tokens) and UUID.match(tokens[index + 1]):
+            return tokens[index + 1]
+        return token
+    raise RuntimeError(f"no {kind} id in cmux output: {output!r}")
+
+
+def workspace_uuid(ref):
+    """`new-workspace` prints a ref only. Refs renumber, so trade it for a UUID."""
+    if UUID.match(ref):
+        return ref
+    # `list-workspaces` covers the caller's window only, so read every window.
+    match = re.search(
+        rf"workspace {re.escape(ref)}(?![0-9])\s+([0-9A-Fa-f-]{{36}})",
+        cmux("tree", "--all"),
+    )
+    return match.group(1) if match else ref
+
+
+def caller_context():
+    """Return the window, workspace, and surface UUIDs that this script runs in."""
+    try:
+        payload = json.loads(cmux("identify"))
+    except (RuntimeError, ValueError):
+        return {}
+    caller = payload.get("caller") or {}
+    return {
+        "window": caller.get("window_id"),
+        "workspace": caller.get("workspace_id"),
+        "surface": caller.get("surface_id"),
+    }
 
 
 def parse_specs(raw):
@@ -79,104 +70,276 @@ def parse_specs(raw):
     for item in raw:
         if ":" not in item:
             sys.exit(f"error: '{item}' is not NAME:DIR")
-        name, _, d = item.partition(":")
-        name, d = name.strip(), os.path.abspath(os.path.expanduser(d.strip()))
+        name, _, directory = item.partition(":")
+        name = name.strip()
+        directory = os.path.abspath(os.path.expanduser(directory.strip()))
         if not name:
             sys.exit(f"error: '{item}' has an empty name")
-        os.makedirs(d, exist_ok=True)
-        specs.append((name, d))
-    names = [n for n, _ in specs]
-    dupes = {n for n in names if names.count(n) > 1}
-    if dupes:
-        # Duplicate names make ListAgents ambiguous and sends need disambiguating.
-        sys.exit(f"error: duplicate session names: {', '.join(sorted(dupes))}")
+        os.makedirs(directory, exist_ok=True)
+        specs.append((name, directory))
+    names = [name for name, _ in specs]
+    duplicates = {name for name in names if names.count(name) > 1}
+    if duplicates:
+        sys.exit(f"error: duplicate session names: {', '.join(sorted(duplicates))}")
     return specs
 
 
+def new_matching_records(before, wanted):
+    return [
+        record
+        for record in live_records()
+        if record_identity(record) not in before and normalized_name(record) in wanted
+    ]
+
+
+def ready_by_name(records):
+    ready = {}
+    for record in records:
+        socket_path = record.get("messagingSocketPath")
+        if not socket_live(socket_path):
+            continue
+        name = normalized_name(record)
+        previous = ready.get(name)
+        if previous is None or (record.get("startedAt") or 0) > (
+            previous.get("startedAt") or 0
+        ):
+            ready[name] = record
+    return ready
+
+
+def print_cleanup(records, layout):
+    pids = sorted(
+        {record.get("pid") for record in records if isinstance(record.get("pid"), int)}
+    )
+    print("\nSafe teardown (kill processes before closing their UI):")
+    if pids:
+        print("  kill " + " ".join(str(pid) for pid in pids))
+    else:
+        print("  No launched PID registered yet; inspect the panes before closing them.")
+    if layout["placement"] == "window":
+        print(f"  cmux close-window --window {layout['window']}")
+        print("  # close-window can return OK and leave the window open.")
+        print("  # If it stays in cmux list-windows, ask the user for a Cmd+W.")
+    elif layout["placement"] == "workspace":
+        for workspace in layout["workspaces"]:
+            print(f"  cmux close-workspace --workspace {workspace}")
+    else:
+        # Split placement lives in the caller's own workspace. Close the new
+        # panes only. Never close this workspace or this window.
+        for surface in layout["surfaces"]:
+            print(
+                f"  cmux close-surface --workspace {layout['workspace']} "
+                f"--surface {surface}"
+            )
+    print("  python3 ~/.claude/skills/peer-sessions/scripts/peer-addr.py")
+
+
+def start_session(workspace, surface, directory, command):
+    """Type a launch command into a shell that cmux already opened."""
+    full = f"cd {shlex.quote(directory)} && {command}"
+    cmux("send", "--workspace", workspace, "--surface", surface, full)
+    cmux("send-key", "--workspace", workspace, "--surface", surface, "Enter")
+
+
+def build_splits(specs, launch_cmd, caller, direction, focus):
+    """Put each session in a new pane beside the caller's pane."""
+    workspace = caller.get("workspace")
+    anchor = caller.get("surface")
+    if not workspace or not anchor:
+        sys.exit(
+            "error: --placement split needs a cmux terminal. "
+            "Run it inside cmux, or use --placement workspace|window."
+        )
+    if len(specs) > 3 and direction in ("right", "left"):
+        print(
+            f"note: {len(specs)} side panes get narrow. "
+            "Use --direction down, or --placement workspace.",
+            file=sys.stderr,
+        )
+    surfaces = []
+    for name, directory in specs:
+        output = cmux(
+            "new-split",
+            direction,
+            "--workspace",
+            workspace,
+            "--surface",
+            anchor,
+            "--focus",
+            focus,
+        )
+        surface = id_from(output, "surface")
+        surfaces.append(surface)
+        start_session(workspace, surface, directory, launch_cmd(name))
+        anchor = surface  # chain, so the panes line up in spec order
+    return {
+        "placement": "split",
+        "window": caller.get("window"),
+        "workspace": workspace,
+        "workspaces": [],
+        "surfaces": surfaces,
+    }
+
+
+def build_workspaces(specs, launch_cmd, window, prefix, per_workspace, direction, focus):
+    """Put each group of sessions in its own workspace."""
+    workspaces = []
+    surfaces = []
+    groups = [
+        specs[index : index + per_workspace]
+        for index in range(0, len(specs), per_workspace)
+    ]
+    for group_index, group in enumerate(groups, 1):
+        first_name, first_dir = group[0]
+        cmux_args = [
+            "new-workspace",
+            "--name",
+            f"{prefix}-{group_index}",
+            "--cwd",
+            first_dir,
+            "--command",
+            launch_cmd(first_name),
+        ]
+        if window:
+            cmux_args += ["--window", window]
+        cmux_args += ["--focus", focus if group_index == 1 else "false"]
+        workspace = workspace_uuid(id_from(cmux(*cmux_args), "workspace"))
+        workspaces.append(workspace)
+
+        for name, directory in group[1:]:
+            output = cmux(
+                "new-split", direction, "--workspace", workspace, "--focus", "false"
+            )
+            surface = id_from(output, "surface")
+            surfaces.append(surface)
+            start_session(workspace, surface, directory, launch_cmd(name))
+    return {"window": window, "workspaces": workspaces, "surfaces": surfaces}
+
+
 def main():
-    p = argparse.ArgumentParser(add_help=True)
-    p.add_argument("specs", nargs="+", metavar="NAME:DIR")
-    p.add_argument("--window", action="store_true")
-    p.add_argument("--per-workspace", type=int, default=2, choices=(1, 2))
-    p.add_argument("--prefix", default="fleet")
-    p.add_argument("--model")
-    p.add_argument("--claude-arg", action="append", default=[])
-    p.add_argument("--timeout", type=int, default=120)
-    p.add_argument("--permission-mode", default="auto")
-    a = p.parse_args()
+    parser = argparse.ArgumentParser(add_help=True)
+    parser.add_argument("specs", nargs="+", metavar="NAME:DIR")
+    parser.add_argument(
+        "--placement",
+        choices=("split", "workspace", "window"),
+        default="workspace",
+        help="split: panes beside this one. workspace: new workspaces in this "
+        "window. window: a new window (default: workspace)",
+    )
+    parser.add_argument(
+        "--window", action="store_true", help="alias for --placement window"
+    )
+    parser.add_argument(
+        "--direction",
+        choices=("right", "left", "up", "down"),
+        default="right",
+        help="direction of each new pane (default: right)",
+    )
+    parser.add_argument(
+        "--focus",
+        choices=("true", "false"),
+        help="move the UI to the fleet (default: false for split, true otherwise)",
+    )
+    parser.add_argument("--per-workspace", type=int, default=2, choices=(1, 2))
+    parser.add_argument("--prefix", default="fleet")
+    parser.add_argument("--model")
+    parser.add_argument("--claude-arg", action="append", default=[])
+    parser.add_argument("--timeout", type=int, default=120)
+    parser.add_argument("--permission-mode", default="auto")
+    args = parser.parse_args()
 
-    specs = parse_specs(a.specs)
-    before = set(live_sockets())
+    placement = "window" if args.window else args.placement
+    focus = args.focus or ("false" if placement == "split" else "true")
 
-    extra = list(a.claude_arg)
-    if a.model:
-        extra += ["--model", a.model]
+    specs = parse_specs(args.specs)
+    before = {record_identity(record) for record in live_records()}
+    wanted = {name for name, _ in specs}
+
+    extra = list(args.claude_arg)
+    if args.model:
+        extra += ["--model", args.model]
 
     def launch_cmd(name):
         return " ".join(
-            shlex.quote(x) for x in
-            ["claude", "--name", name, "--permission-mode", a.permission_mode, *extra]
+            shlex.quote(value)
+            for value in [
+                "claude",
+                "--name",
+                name,
+                "--permission-mode",
+                args.permission_mode,
+                *extra,
+            ]
         )
 
-    window = None
-    if a.window:
-        window = cmux("new-window").split()[-1]
-        print(f"window {window}")
+    caller = caller_context()
 
-    workspaces = []
-    groups = [specs[i:i + a.per_workspace] for i in range(0, len(specs), a.per_workspace)]
+    if placement == "split":
+        layout = build_splits(specs, launch_cmd, caller, args.direction, focus)
+        print(f"workspace {layout['workspace']} (this one)")
+        print(f"panes {', '.join(layout['surfaces'])}")
+    else:
+        if placement == "window":
+            window = cmux("new-window").split()[-1]
+            print(f"window {window} (new)")
+        else:
+            window = caller.get("window")
+            print(f"window {window or '(focused)'} (this one)")
+        layout = build_workspaces(
+            specs,
+            launch_cmd,
+            window,
+            args.prefix,
+            args.per_workspace,
+            args.direction,
+            focus,
+        )
+        layout["placement"] = placement
+        print(f"workspaces {', '.join(layout['workspaces'])}")
 
-    for gi, group in enumerate(groups, 1):
-        first_name, first_dir = group[0]
-        args = ["new-workspace", "--name", f"{a.prefix}-{gi}", "--cwd", first_dir,
-                "--command", launch_cmd(first_name)]
-        if window:
-            args += ["--window", window]
-        if gi == 1:
-            args += ["--focus", "true"]
-        ws = ref_from(cmux(*args), "workspace")
-        workspaces.append(ws)
-
-        # The rest of the group go in splits. A split is a bare shell, so the
-        # session is started by typing into it.
-        for name, d in group[1:]:
-            surface = ref_from(cmux("new-split", "right", "--workspace", ws), "surface")
-            cmd = f"cd {shlex.quote(d)} && {launch_cmd(name)}"
-            cmux("send", "--workspace", ws, "--surface", surface, cmd)
-            cmux("send-key", "--workspace", ws, "--surface", surface, "Enter")
-
-    print(f"workspaces {', '.join(workspaces)}")
-
-    wanted = [n for n, _ in specs]
-    start = time.time()
+    started = time.time()
+    records = []
     ready = {}
-    while time.time() - start < a.timeout:
-        # Only count names that appeared after we started, so a pre-existing
-        # session with the same name can't be mistaken for one of ours.
-        current = live_sockets()
-        ready = {n: s for n, s in current.items() if n in wanted and n not in before}
+    while time.time() - started < args.timeout:
+        records = new_matching_records(before, wanted)
+        ready = ready_by_name(records)
         if len(ready) == len(wanted):
             break
         time.sleep(2)
 
-    elapsed = int(time.time() - start)
+    elapsed = int(time.time() - started)
+    records = new_matching_records(before, wanted)
+    ready = ready_by_name(records)
+
+    if focus == "true" and layout["workspaces"]:
+        # A new window opens on its own default workspace, so `--focus true` on
+        # the first workspace does not stick. Select it again here, after every
+        # session has booted. An earlier switch races the launch command that
+        # cmux types into the new shell, and scrambles it.
+        cmux("select-workspace", "--workspace", layout["workspaces"][0])
     for name, _ in specs:
         if name in ready:
-            print(f"+ {name:<24} {'uds:' + ready[name]}")
+            record = ready[name]
+            print(
+                f"+ {name:<24} pid {record['pid']:<7} "
+                f"uds:{record['messagingSocketPath']}"
+            )
         else:
-            print(f"- {name:<24} did not register a socket in {a.timeout}s")
+            print(f"- {name:<24} did not register a live socket in {args.timeout}s")
 
-    missing = [n for n, _ in specs if n not in ready]
+    missing = [name for name, _ in specs if name not in ready]
     if missing:
-        print(f"\n{len(ready)}/{len(wanted)} ready after {elapsed}s. "
-              "Check the pane — a session that stalls on a permission prompt "
-              "never registers.", file=sys.stderr)
+        print(
+            f"\n{len(ready)}/{len(wanted)} ready after {elapsed}s. "
+            "Check the pane — a stalled permission prompt never registers.",
+            file=sys.stderr,
+        )
+        print_cleanup(records, layout)
         return 1
 
     print(f"\n{len(ready)} ready in {elapsed}s.")
-    print("Send with the bare name (expect one [ref] bounce first), or these addresses.")
-    if window:
-        print(f"Tear down with: cmux close-window --window {window}")
+    print("Send with a uds: address above, or a freshly resolved ListAgents name/ref.")
+    print_cleanup(records, layout)
     return 0
 
 

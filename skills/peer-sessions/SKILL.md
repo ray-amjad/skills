@@ -1,6 +1,6 @@
 ---
 name: peer-sessions
-description: Run a fleet of Claude Code sessions on this machine and make them talk to each other with SendMessage — launch them in cmux windows, panes and splits, address them correctly, hand out work, and collect their replies. Use this skill whenever the user wants two or more Claude sessions working together, mentions SendMessage, ListAgents, peer sessions, cross-session messaging, or agents messaging each other; whenever they want to spin up sessions in new windows, workspaces, panes or splits to watch them work or film a demo; whenever work should be fanned out to parallel sessions rather than subagents; and especially whenever a send fails with "not an agent in this conversation", "re-send with the ref", or any confusion about why one session cannot reach another. Also use it for tearing those sessions down cleanly afterwards.
+description: Run a fleet of Claude Code sessions on this machine and make them talk to each other with SendMessage — from Claude Code itself or through a real Claude relay when the caller is Codex. Launch them in cmux windows, panes and splits, address them correctly, hand out work, collect or recover replies, and tear them down cleanly. Use whenever the user wants two or more Claude sessions working together, asks Codex to contact an existing Claude session, mentions SendMessage, ListAgents, peer sessions, cross-session messaging, or agents messaging each other; whenever they want sessions in new windows, workspaces, panes or splits; and especially when a send fails with "not an agent in this conversation", "re-send with the ref", or the caller lacks Claude's native messaging socket.
 ---
 
 # Peer sessions
@@ -12,18 +12,31 @@ The loop: spawn a fleet → send a brief to each peer → end your turn → repl
 ## 1. Spawn
 
 ```bash
-python3 ~/.claude/skills/peer-sessions/scripts/spawn-fleet.py --window \
+python3 ~/.claude/skills/peer-sessions/scripts/spawn-fleet.py --placement window \
   orbits:/tmp/lab/orbits planets:/tmp/lab/planets sun:/tmp/lab/sun
 ```
-```
-window F8464A83-...
-+ orbits    uds:/tmp/cc-socks/17466.sock
-+ planets   uds:/tmp/cc-socks/17398.sock
-+ sun       uds:/tmp/cc-socks/17585.sock
-3 ready in 10s.
+
+Each argument is `NAME:DIR`. The script prints each session's `uds:` address and the exact teardown commands, returns when every session is addressable, and names each session that stalled.
+
+`--placement` says where the fleet appears. You choose it. Ask the user only when the choice changes their screen and you cannot tell what they want.
+
+| Placement | Where the peers land | Pick it when |
+|---|---|---|
+| `split` | new panes beside your own pane, in your workspace | 1-3 peers, short work, the user watches you work. Your pane keeps the focus. |
+| `workspace` (default) | new workspaces in your window | 3+ peers, or work that runs for minutes. The user's current screen stays clean, and one tab click reaches the fleet. |
+| `window` | a new window, with the workspaces inside it | a big fleet, a screen recording, or a second monitor. |
+
+Every other flag (`--direction`, `--focus`, `--per-workspace`, `--model`, `--claude-arg`, …) and the per-placement edge cases: read `references/placement.md`.
+
+Resolve one existing target without wading through the whole registry:
+
+```bash
+python3 ~/.claude/skills/peer-sessions/scripts/peer-addr.py \
+  --name worker-fix --details
+python3 ~/.claude/skills/peer-sessions/scripts/peer-addr.py --pid 66826 --json
 ```
 
-Each argument is `NAME:DIR`. Flags: `--window` (own window), `--per-workspace 1`, `--model`, `--claude-arg <flag>` (repeatable escape hatch). The script returns when each session is addressable. The script names each session that stalled.
+Filters preserve duplicate names by returning every matching PID. `--json` is the stable interface for scripts. A `?` row means a sandbox allowed the registry read but denied the active socket check; rerun with process/socket access before messaging.
 
 Sessions start with `--permission-mode auto`. This is the only mode that works with no human present. An `--allowedTools` list stalls on the first MCP tool that is not in the list. `--dangerously-skip-permissions` makes the receiver hold inbound messages for human approval. The peer then never sees your brief.
 
@@ -39,30 +52,28 @@ SendMessage(to: "uds:/tmp/cc-socks/17466.sock", message: "...")
 
 **The first send with a bare name always bounces** — "not an agent in this conversation, re-send with the ref". That is a confirmation, not a failure. Copy the `[ref]` from the error and send again. Send all briefs in one batch. They bounce together and you re-send them together. A `uds:` address does not bounce.
 
-Each brief that expects a reply must end with your literal address (from `peer-addr.py --me`):
+Each brief that expects a reply must end with your literal address (from `peer-addr.py --me`), because the peer cannot find out who you are:
 
 ```
 When done, message me back:
 SendMessage(to: "uds:/tmp/cc-socks/4667.sock", message: "...")
 ```
 
-The peer cannot find out who you are. Do not make the peer guess. Ask for a fixed reply format ("<name> done: <URL>") — replies from a large fleet then collate with no work. Add a scope guard too ("research and write only, do not touch <repo>"). Peers obey it.
-
-Two rules: `success: true` means the message arrived, not that the peer did the work. A send is one-way — say clearly if you want a reply.
+Ask for a fixed reply format ("<name> done: <URL>") so a large fleet collates with no work, and add a scope guard ("research and write only, do not touch <repo>") — peers obey it. Two rules: `success: true` means the message arrived, not that the peer did the work. A send is one-way — say clearly if you want a reply.
 
 ## 3. End your turn
 
 When the briefs are out, **stop**. A peer reply IS the notification. The reply arrives as a new user turn and wakes you. A poll loop on the panes burns tokens and blocks the user. Poll only when you must see the screen (filming, or a quiet session) — recipes in `references/manual-rig.md`.
 
+### Calling from Codex
+
+Codex has no native `SendMessage` tool and no messaging socket. Never fake or implement the Unix-socket protocol — use a real temporary Claude Code session as the relay, and recover truncated replies from transcripts with `scripts/peer-inbox.py`. Read `references/codex-bridge.md` before operating this path.
+
 ## 4. Tear down
 
-**When you close the UI, the sessions do not stop.** `close-window` and `close-workspace` return `OK` and each `claude` process stays alive as an addressable orphan. Kill first, then close, then check:
+**When you close the UI, the sessions do not stop.** Every cmux close command returns `OK` and each `claude` process stays alive as an addressable orphan. So: **kill first, close second**, then confirm with `peer-addr.py`.
 
-```bash
-kill <pid> <pid>                                    # pids from peer-addr.py
-cmux close-window --window <uuid>                   # can return OK and not close — see troubleshooting
-python3 ~/.claude/skills/peer-sessions/scripts/peer-addr.py   # confirm gone
-```
+Run the teardown the spawn script printed — it matches the placement and uses durable UUIDs. Close only what you made: a `split` fleet sits in the user's own workspace, so closing that workspace closes the user's work too. Hand-written teardown syntax: `references/placement.md`.
 
 ## When something fails
 
