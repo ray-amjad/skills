@@ -1,7 +1,6 @@
 ---
 name: idea-to-spec
-disable-model-invocation: true
-description: Develop a rough feature idea or brief into a verified, implementation-ready technical spec through codebase homework, a one-decision-at-a-time interview, explicit entrypoint and trust-boundary design, a strawman draft critiqued by a fresh-context agent, consistency checks, and a user-confirmed playback before writing. Use when the user wants to spec, plan, or define a feature, refactor, migration, workflow, or system change.
+description: Develop a rough feature idea or brief into a verified, implementation-ready technical spec through codebase homework, a one-decision-at-a-time interview, explicit entrypoint and trust-boundary design, a strawman draft critiqued by a fresh-context agent, consistency checks, and a user-confirmed playback before writing. Use it to spec, plan, or define a feature, refactor, migration, workflow, or system change.
 ---
 
 # Idea to Spec
@@ -10,13 +9,13 @@ Turn a rough idea into a concise, evidence-backed spec containing only decisions
 
 ## Required sequence
 
-The phases are gates. Do not reorder or skip them.
+The phases are gates. Do not reorder them, and never skip one silently. The only phase with a declared skip condition is step 4; a skip is one recorded line in the session record.
 
 1. **Resolve the brief.** Read `$0` and every file it references. If `$0` is absent, use the user's request as the brief. Locate relevant project research and existing specs, but do not treat an old spec as evidence of current behavior.
-2. **Create the session record.** Copy `templates/session-record.md` into a scratchpad. If one doesn't exist use `.idea-to-spec/`. Do not commit the record unless the user asks.
+2. **Create the session record.** Copy `templates/session-record.md` into the project's scratchpad directory; if the project has no scratchpad convention, use `.idea-to-spec/`. Do not commit the record unless the user asks.
 3. **Homework.** Read `references/homework-and-verification.md` completely and follow it before asking question 1. Record current-state evidence and the runtime envelope.
-4. **Draft and critique.** Read `references/draft-and-critique.md` completely. Draft the smallest strawman spec from homework facts alone, have a fresh-context agent critique it, and seed the coverage map and interview agenda with what survives.
-5. **Interview.** Read `references/interview-and-coverage.md` completely. Build the coverage map, then ask exactly one decision per turn with 2–3 contrastive options and one visible recommendation.
+4. **Draft and critique.** Read `references/draft-and-critique.md` completely. Draft the smallest strawman spec from homework facts alone, have a fresh-context agent critique it, and seed the interview agenda with what survives; surviving findings also become coverage-map areas when the map is built in step 5. Skippable only via the reference's declared skip condition, recorded in the session record.
+5. **Interview.** Read `references/interview-and-coverage.md` completely. Build the coverage map, then ask exactly one decision per turn with 2–3 contrastive options and one visible recommendation. The interview is not finished until every goal, invariant, and changed behavior has a decided verifier.
 6. **Design the doors.** Before closing the interview, read `references/doors-and-entrypoints.md` completely. Inventory the door set, dangerous effects, transport surfaces, refusals, and trust transitions. Door-design gaps are decisions, not assumptions.
 7. **Prove consistency.** Read `references/consistency-and-playback.md` completely. Build the verb × actor matrix, run every applicable conditional inventory and every consistency check, and paste the shown work into the session record.
 8. **Playback gate.** Send the exact full playback plus numbered defaults-to-veto. Paste that exact message into the session record. Do not write the spec until the user confirms it. Re-play amended portions until confirmed.
@@ -28,6 +27,7 @@ The phases are gates. Do not reorder or skip them.
 - The user owns decisions. The spec contains no policy, threshold, provider, duration, compatibility promise, permission, or destructive behavior they did not decide or confirm.
 - Authentication, credentials, exposure to untrusted input, read-access changes, destructive actions, and overwriting a sole copy require explicit questions. They cannot be defaults-to-veto.
 - Every invariant names an enforcement or detection point, marked machine-runnable (a test, schema, CI check, or grep an agent can execute) or human-judgment-only; human-only checks on load-bearing invariants are explicit confirmed decisions.
+- Verifiers are interview decisions. For every goal, invariant, and changed behavior, the user decides or confirms the check that proves it once implemented — automated test, schema or type constraint, CI gate, executable probe, browser/E2E run (e.g. Playwright against a test account), an agent-runnable verification environment, or human judgment — and the spec's Verification plan contains only these decided verifiers. If a chosen verifier needs infrastructure that does not exist yet (test account, service shim, database branch, sandbox or dummy account), recommend setting it up as separate work — a dedicated verification-environment skill handles the build; the spec records the recommendation and the best verifier that runs today.
 - Every long-running or multi-item flow names its trigger, its terminal states, and its stopping rule — when it stops retrying and spending.
 - Every changed flow appears in **Changes to existing behavior**.
 - Every non-trivial door has a typed contract, one guarantee, named failures, real refusals, and a single owner for irreversible effects.

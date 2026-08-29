@@ -22,4 +22,4 @@ Have a fresh-context agent critique the draft — not a fork, and not yourself: 
 
 ## Fold the findings in
 
-Each critique finding becomes exactly one of: a homework re-check (factual doubts), a coverage-map area, or an interview question. Paste the draft and the critique verbatim into the session record. Nothing from the strawman reaches the final spec without a user decision or playback confirmation — the draft sharpens questions; it never pre-answers them.
+Each critique finding becomes exactly one of: a homework re-check (factual doubts), a coverage-map area to add when the map is built at the start of the interview, or an interview question. Paste the draft and the critique verbatim into the session record. Nothing from the strawman reaches the final spec without a user decision or playback confirmation — the draft sharpens questions; it never pre-answers them.

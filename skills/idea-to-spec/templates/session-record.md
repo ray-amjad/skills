@@ -6,7 +6,7 @@ This is a scratch artifact. Preserve exact evidence, shown work, decisions, and 
 
 ## Verified current-state facts
 
-| Fact | Evidence and exact qualifier | Scope/configuration | Checked |
+| Fact | Scope/configuration | Evidence and exact qualifier | Checked |
 | --- | --- | --- | --- |
 
 ### Raw command output for counts and exhaustive lists
@@ -36,6 +36,11 @@ Paste the draft and the fresh-context critique verbatim, or one line declaring t
 
 | ID | Decision | User answer | Consequences | Status |
 | --- | --- | --- | --- | --- |
+
+## Verifier decisions
+
+| Goal / invariant / changed behavior | Verifier kind | Environment / exact check | Environment exists? (else: recommended setup) | Pass signal | Status |
+| --- | --- | --- | --- | --- | --- |
 
 ## Defaults-to-veto candidates
 

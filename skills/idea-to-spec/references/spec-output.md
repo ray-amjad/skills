@@ -31,7 +31,7 @@ Follow an explicit user destination instead. When the user asks for a file, use 
 - Describe current state as verified, including leaking or duplicated effect paths.
 - Include the selected architecture and at least one rejected alternative when a real choice existed.
 - Include the smallest useful diagram when required by the doors reference.
-- Include an executable verification plan: exact commands/requests and observable pass/fail results at system boundaries.
+- Include an executable verification plan: exact commands/requests and observable pass/fail results at system boundaries. Every entry is a verifier the user decided in the interview or confirmed in the playback, and names the goal, invariant, or behavior change it proves; never invent a verification approach at write time. Name the environment each entry runs in; where one is missing, record the recommendation to set it up as separate work rather than folding the build into this spec.
 
 ## Required sections
 
@@ -41,6 +41,7 @@ Follow an explicit user destination instead. When the user asks for a file, use 
 - Backwards compatibility
 - Proposed architecture and door set
 - Detailed contracts, data/state model, permissions, and flows
+- Invariants and enforcement
 - Failure, retry, observability, execution budget, and stopping rules
 - Migration and cutover
 - Changes to existing behavior
@@ -69,5 +70,6 @@ Before presenting the file:
 6. Recheck batch arithmetic against recorded runtime limits.
 7. Diff the spec's decisions against the confirmed playback.
 8. Confirm every Open Question was actually asked and explicitly deferred.
+9. Confirm every goal, invariant, and changed behavior maps to a Verification plan entry whose verifier was decided in the interview or confirmed in the playback.
 
 Report the issue URL (or file path), a concise executive summary, the door names alone, irreversible effect doors, and any explicitly deferred questions.

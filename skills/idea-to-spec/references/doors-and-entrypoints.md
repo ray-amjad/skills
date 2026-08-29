@@ -48,4 +48,4 @@ An in-process function, REST route, gRPC method, CLI command, and event that exp
 
 When the change spans three or more components, trust boundaries, or dependent stages, include the smallest useful Mermaid context/container/flow diagram. Show actors, system boundaries, the airlock where untrusted input becomes trusted intent, stateful components, external dependencies, and irreversible-effect doors.
 
-Compare at least one plausible alternative door set. Explain why the selected joints, refusals, and chokepoints better express the domain rather than merely why its internal mechanism is convenient.
+When a real choice existed, compare at least one plausible alternative door set. Explain why the selected joints, refusals, and chokepoints better express the domain rather than merely why its internal mechanism is convenient.

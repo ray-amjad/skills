@@ -69,11 +69,11 @@ Include each flow's trigger, named terminal states, and stopping rule.
 
 ## Verification plan
 
-Include exact commands or requests, boundary-visible expected results, and pass/fail conditions.
+One entry per decided verifier, naming the goal, invariant, or behavior change it proves. Include exact commands or requests, boundary-visible expected results, and pass/fail conditions. Name the environment each check runs in; note any missing environment recommended for separate setup.
 
 ## Verified facts
 
-| Fact | Scope/configuration | Evidence | Checked |
+| Fact | Scope/configuration | Evidence and exact qualifier | Checked |
 | --- | --- | --- | --- |
 
 ## Open Questions

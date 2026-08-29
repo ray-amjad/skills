@@ -20,7 +20,7 @@ For every migration or de facto migration, identify the old-and-new overlap wind
 
 ### Mutating-surface checklist
 
-For authenticated or mutating surfaces, send one dedicated checklist before playback. Each line has a recommended choice and can be vetoed independently:
+For authenticated or mutating surfaces, send one dedicated checklist before playback. Each line carries a recommended choice, but these are never-default decisions: the user must confirm or amend every line individually — silence, or the mere absence of a veto, accepts nothing:
 
 - session mechanism and cookie attributes;
 - session lifetime and revocation;
@@ -60,6 +60,7 @@ When answers stop changing the topology, send a written playback containing:
 
 - every decision and its reasoning;
 - the final door set and dangerous-effect chokepoints;
+- every decided verifier, what it proves, and any missing verification environment recommended for separate setup;
 - compatibility posture, migration/cutover, permissions, and ownership;
 - every non-goal;
 - skipped conditional inventories and reasons;

@@ -17,6 +17,7 @@ Before question 1, add every relevant area below to the session record. Each are
 - Core value transformation and who may override or dispute it
 - Coverage boundaries and behavior when there is no acceptable valid result
 - Replacement parity for deleted, bypassed, or substituted components, including the fate and verified viability of any replacement scheduler or execution service
+- Verifiers: how each goal, invariant, and changed behavior will be proven once implemented, where each check runs, and whether the needed verification environment exists or must be built
 - Non-goals
 
 For every new datastore or service, list every existing path that gains a synchronous read or write. Putting a dependency on an existing critical path requires a user decision.
@@ -49,6 +50,8 @@ Ensure the interview resolves:
 - technical operations: state location, execution timing, retries, stale data, sync conflicts, failed automation, and persistently failing work;
 - the coverage boundary: unusual inputs, sessions, devices, timezones, content types, user states, and external systems where the logic stops;
 - replacement parity: isolation, retries, dashboards, timeout budgets, limits, observability, and failure surfaces supplied implicitly by what is being replaced;
+- the verifiers: brainstorm with the user what verification could exist for this work, then decide, for each goal, invariant, and changed behavior, the kind of check that proves it after implementation — automated test, schema constraint, CI gate, executable probe, browser/E2E run such as Playwright against a test account, an agent-runnable verification environment (simulator, database branch, service shim, sandbox or dummy account), or human judgment — where it lives, and its observable pass signal; prefer checks the implementing agent can run itself and watch fail; an undecided verifier is an unresolved decision, and a human-judgment verifier on a load-bearing invariant is an explicit confirmed decision;
+- verification infrastructure: whether each chosen verifier's environment already exists; if not, recommend setting one up as separate work outside this spec and record the best verifier that runs today; and whether verification ends at implementation or extends into post-deploy monitoring with its own stopping rule;
 - behavior when no acceptable valid option exists.
 
 For schedules, deadlines, recurring windows, or cross-timezone behavior, ask whether already-created windows remain anchored, move automatically, or move only with explicit consent when context changes.
