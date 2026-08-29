@@ -20,7 +20,7 @@ For every migration or de facto migration, identify the old-and-new overlap wind
 
 ### Mutating-surface checklist
 
-For authenticated or mutating surfaces, send one dedicated checklist before playback. Each line carries a recommended choice, but these are never-default decisions: the user must confirm or amend every line individually — silence, or the mere absence of a veto, accepts nothing:
+For authenticated or mutating surfaces, send one dedicated checklist before playback. Each line carries a recommended choice, but these are never-default decisions: the user must confirm or amend every line individually — silence, or the mere absence of a veto, accepts nothing, and any unaddressed line is re-asked as its own question. The checklist satisfies the explicit-question rule only because each line is affirmatively confirmed; it is a formatting concession, not a defaults mechanism:
 
 - session mechanism and cookie attributes;
 - session lifetime and revocation;
@@ -52,11 +52,11 @@ For every datastore or service introduced or newly connected, list each process 
 5. **Rules executed:** Run each algorithm against the user's example, one live case, and the boundary/failure case the rule exists to handle. Include creation from an empty/NULL state and every lifecycle transition where relevant. Show arithmetic for schedules, dedupe keys, cadence, caps, and similar rules, and confirm stored types can represent the promised distinction.
 6. **Runtime feasibility:** For every loop/batch/fan-out, calculate items × round trips × realistic latency and compare it with the measured process budget. An unbounded batch under a bounded runtime is an unresolved decision.
 
-Any failure becomes another interview decision or, if low-stakes and eligible, a numbered default-to-veto. It never becomes a silent assumption or an unasked Open Question.
+Any failure becomes another interview decision or, if low-stakes and outside the never-default categories listed in SKILL.md's non-negotiable rules, a numbered default-to-veto. A missing or undecided verifier is never default-to-veto eligible; it reopens the interview. A failure never becomes a silent assumption or an unasked Open Question.
 
 ## Playback gate
 
-When answers stop changing the topology, send a written playback containing:
+When every coverage-map area is closed, no interview questions remain, and the latest answers created no new components or questions, send a written playback containing:
 
 - every decision and its reasoning;
 - the final door set and dangerous-effect chokepoints;
@@ -64,6 +64,6 @@ When answers stop changing the topology, send a written playback containing:
 - compatibility posture, migration/cutover, permissions, and ownership;
 - every non-goal;
 - skipped conditional inventories and reasons;
-- a short numbered defaults-to-veto list for low-stakes residue only.
+- a short numbered defaults-to-veto list — only reversible minor values (formats, labels, internal names, non-user-facing defaults) that no never-default rule reserves for an explicit question. Confirming the playback accepts these unless the user vetoes their numbered line.
 
-Paste the exact sent text into the session record. Do not summarize it there. Wait for confirmation. If the user changes or vetoes a line, paste the exact amended playback as a new record entry—never a summary—and re-play the affected picture until confirmed. Any later line citation must point to exact sent text. Only then may spec writing begin.
+Paste the exact sent text into the session record. Do not summarize it there. Wait for confirmation. If the user changes or vetoes a line, paste the exact amended playback as a new record entry—never a summary—and re-play the affected picture until confirmed. Record the user's confirming message verbatim under the session record's Final confirmation. Any later line citation must point to exact sent text. Only then may spec writing begin.

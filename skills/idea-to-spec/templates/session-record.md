@@ -25,7 +25,7 @@ This is a scratch artifact. Preserve exact evidence, shown work, decisions, and 
 
 ## Strawman draft and critique
 
-Paste the draft and the fresh-context critique verbatim, or one line declaring the skip and why.
+Paste the fresh-context critique verbatim with a one-line disposition per finding (re-check / coverage area / question), link the draft scratch file, or write one line declaring the skip and why.
 
 ## Coverage map
 
@@ -81,3 +81,5 @@ Paste the draft and the fresh-context critique verbatim, or one line declaring t
 Paste each sent playback and every amended playback as a separate verbatim entry.
 
 ## Final confirmation
+
+Paste the user's confirming message verbatim.

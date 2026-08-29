@@ -4,7 +4,7 @@ Run after homework and before the interview. The point is to spend cheap agent e
 
 ## Skip condition
 
-For a small, single bounded change with few decision areas, skip this phase and record one line in the session record saying so and why. A skipped phase is declared, never silent.
+For a small bounded change — roughly: one component, no new door, no schema, auth, or permission change — skip this phase and record one line in the session record saying so and why. A skipped phase is declared, never silent.
 
 ## Draft the strawman
 
@@ -22,4 +22,4 @@ Have a fresh-context agent critique the draft — not a fork, and not yourself: 
 
 ## Fold the findings in
 
-Each critique finding becomes exactly one of: a homework re-check (factual doubts), a coverage-map area to add when the map is built at the start of the interview, or an interview question. Paste the draft and the critique verbatim into the session record. Nothing from the strawman reaches the final spec without a user decision or playback confirmation — the draft sharpens questions; it never pre-answers them.
+Each critique finding becomes exactly one of: a homework re-check (factual doubts), a coverage-map area to add when the map is built at the start of the interview, or an interview question. Paste the critique verbatim into the session record with a one-line disposition per finding; the draft itself may be a linked scratch file rather than an inline paste. Nothing from the strawman reaches the final spec without a user decision or playback confirmation — the draft sharpens questions; it never pre-answers them.

@@ -6,7 +6,7 @@ Complete this phase before asking the first decision question.
 
 Read the relevant code, documentation, configuration, research, migrations, tests, and deployment files. Trace actual call paths; do not infer behavior from names. Search for all sibling implementations and all writers/readers of affected state.
 
-Open the interview with no more than six bullets describing gaps between the brief's mental model and verified reality. A verified gap is information, not a question.
+When the interview later opens (step 4), start its first message with at most six bullets stating gaps between the brief's mental model and verified reality. State each as a fact with evidence; do not ask the user to confirm it.
 
 ## Separate facts from decisions
 
@@ -41,7 +41,7 @@ For every process that will execute a proposed flow, record from actual configur
 - per-second and per-window limits for APIs called in loops;
 - queue, cron, worker, or transaction limits relevant to retries and fan-out.
 
-Record file:line for repository configuration. Reading one nearby line is not evidence for another. Do not design a loop, batch, or fan-out until its process envelope is known.
+Record file:line for repository configuration. A limit verified for one process does not cover any other process — verify each separately. Do not design a loop, batch, or fan-out until its process envelope is known.
 
 ## Compatibility posture
 
