@@ -10,6 +10,6 @@ Interview me in detail using the Ask QuestionTool (if available) about literally
 - Concerns
 - Tradeoffs, etc. 
 
-For non-technical domains, ask me their equivalents.
+This applies for technical domains. For non-technical domains, ask me the domain's equivalents.
 
 Never ask a question with an obvious answer. Go deep, round by round.
