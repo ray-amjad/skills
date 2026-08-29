@@ -2,7 +2,6 @@
 name: idea-to-spec
 disable-model-invocation: true
 description: Develop a rough feature idea or brief into a verified, implementation-ready technical spec through codebase homework, a one-decision-at-a-time interview, explicit entrypoint and trust-boundary design, a strawman draft critiqued by a fresh-context agent, consistency checks, and a user-confirmed playback before writing. Use when the user wants to spec, plan, or define a feature, refactor, migration, workflow, or system change.
-user_invocable: true
 ---
 
 # Idea to Spec
