@@ -4,21 +4,17 @@ Use `../templates/technical-spec.md` as the structure, adapting sections to the 
 
 ## Where the spec goes
 
-**Default: a GitHub issue in the current repository.** A spec is a work item other people and agents pick up, so it belongs in the issue tracker, not in an untracked local file that only this machine can see.
+After the playback is confirmed, ask the destination as one decision: **a GitHub issue in the current repository (Recommended)** — a spec is a work item other people and agents pick up, so it belongs in the tracker — or a local file, or a destination the user names. Check `gh repo view --json nameWithOwner` before asking; if the directory is not a GitHub repository or `gh` is unauthenticated, say so and recommend a file instead.
 
-Write the spec to a scratch file first, then publish it and delete the scratch copy:
+For an issue: write the spec to a scratch file, publish, then delete the scratch copy.
 
 ```bash
 gh issue create --title 'Spec: <topic>' --body-file <scratch>.md
 ```
 
-Title the issue `Spec: <topic>` so specs are greppable in the issue list. Report the issue URL as the deliverable. Add `--label`, `--assignee`, or `--milestone` only when the user asks; do not invent labels that may not exist in the repository, since `gh issue create` fails outright on an unknown label.
+Title it `Spec: <topic>` so specs are greppable. Report the issue URL as the deliverable. Add `--label`, `--assignee`, or `--milestone` only when the user asks — `gh issue create` fails outright on an unknown label. Revisions use `gh issue edit <number> --body-file <scratch>.md`; never open a second issue for the same spec.
 
-Before publishing, confirm the repository with `gh repo view --json nameWithOwner`. If the working directory is not a GitHub repository, or `gh` is not authenticated, say so and ask where the spec should go rather than silently falling back to a local file.
-
-Updating an existing spec issue is `gh issue edit <number> --body-file <scratch>.md`. Never open a second issue for a revision of the same spec.
-
-Follow an explicit user destination instead. When the user asks for a file, use `specs/YYYY-MM-DD-topic.md` with the current date and a kebab-case topic.
+For a file: `specs/YYYY-MM-DD-topic.md` with the current date and a kebab-case topic.
 
 ## Writing rules
 
@@ -31,7 +27,7 @@ Follow an explicit user destination instead. When the user asks for a file, use 
 - Describe current state as verified, including leaking or duplicated effect paths.
 - Include the selected architecture and at least one rejected alternative when a real choice existed.
 - Include the smallest useful diagram when required by the doors reference.
-- Include an executable verification plan: exact commands/requests and observable pass/fail results at system boundaries. Every entry is a verifier the user decided in the interview or confirmed in the playback, and names the goal, invariant, or behavior change it proves; never invent a verification approach at write time. Name the environment each entry runs in; where one is missing, record the recommendation to set it up as separate work rather than folding the build into this spec.
+- Include an executable verification plan: exact commands/requests and observable pass/fail results at system boundaries. Every entry is a decided or playback-confirmed verifier naming what it proves and the environment it runs in — never invent a verification approach at write time. Where an environment is missing, record the separate-work setup recommendation rather than folding the build into this spec.
 
 ## Required sections
 
