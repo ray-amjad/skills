@@ -1,7 +1,6 @@
 ---
 name: interview-me
 description: Ask me deep, non-obvious questions about any plan or idea, with question areas matched to its domain.
-disable-model-invocation: true
 ---
 
 Interview me in detail using the Ask QuestionTool (if available) about literally anything: 
