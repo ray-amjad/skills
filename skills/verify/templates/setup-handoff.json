@@ -1,0 +1,12 @@
+{
+  "flow": "RENAME-01",
+  "app_url": "http://localhost:3000",
+  "database_url": "postgres://user@localhost:5432/verify_rename_01",
+  "session": {"kind": "cookie", "name": "better-auth.session_token", "value": "..."},
+  "actor": {"role": "org-owner", "org": "test-org"},
+  "fixtures": {"lesson_id": 42, "old_title": "Onboarding", "new_title": "Onboarding v2"},
+  "seeded": true,
+  "provides_used": ["auth-session", "org-owner", "postgres-isolated", "seed-api"],
+  "server_pid": 48213,
+  "notes": "seed via POST /api/v1/seed/lesson; Mailpit not started, flow names no email"
+}
