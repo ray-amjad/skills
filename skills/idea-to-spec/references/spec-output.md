@@ -1,51 +1,44 @@
-# Spec output and final verification
+# Spec output
 
-Use `../templates/technical-spec.md` as the structure. Every template section is required; adapt its depth, never its presence. Omit irrelevant mechanism detail, but never omit a decided invariant, door, permission, state, failure behavior, compatibility change, or non-goal.
+## Publish
 
-## Where the spec goes
+Ask one question: where should the spec go? Recommend **a GitHub issue in the current repo** (check `gh repo view --json nameWithOwner` first), with a local file or a user-named destination as the alternatives.
 
-Ask the destination as one decision: **a GitHub issue in the current repository (Recommended)** — a spec is a work item other people and agents pick up, so it belongs in the tracker — or a local file, or a destination the user names. Check `gh repo view --json nameWithOwner` before asking; if the directory is not a GitHub repository or `gh` is unauthenticated, say so and recommend a file instead.
+- **Issue:** `gh issue create --title 'Spec: <topic>' --body-file <file>`. No labels unless asked. Revise with `gh issue edit`, never a second issue.
+- **File:** `specs/YYYY-MM-DD-topic.md`.
 
-For an issue: write the spec to a scratch file, publish, then delete the scratch copy.
+## The spec
 
-```bash
-gh issue create --title 'Spec: <topic>' --body-file <scratch>.md
-```
+Four sections, in this order. Add an extra only when the change needs it, and never write "None".
 
-Title it `Spec: <topic>` so specs are greppable. Report the issue URL as the deliverable. Add `--label`, `--assignee`, or `--milestone` only when the user asks — `gh issue create` fails outright on an unknown label. Revisions use `gh issue edit <number> --body-file <scratch>.md`; never open a second issue for the same spec.
+**1. Starting point**
+- **Why:** the root cause, not the symptom, and the evidence behind it (report, log line, failing request).
+- **Current state:** only the facts that drive a decision, each with its source (file:line, command, URL) and the date checked, including traps documented in the files being touched. Mark an unverified fact **I could not verify this**, with its consequence and the safe behavior meanwhile.
+- **First task, before any code:** re-probe the load-bearing facts; if one is false, stop and report. Then set up any environment that Verifies on marks as missing.
 
-For a file: `specs/YYYY-MM-DD-topic.md` with the current date and a kebab-case topic.
+**2. Goals and non-goals**
+- **Goals:** numbered outcomes someone else could check.
+- **Non-goals:** what an eager agent would otherwise do, including behavior left unchanged on purpose and any tempting rejected alternative, one-line reason each. Items the user chose to defer are listed here, marked deferred.
+
+**3. Constraints**
+- **Invariants:** a table of invariant, where it is enforced or detected, machine or human. Cite the project's existing invariants by ID ("must still satisfy N-1"); never copy their text. An existing invariant this change breaks is said out loud and updated where it lives.
+- **Stop and ask / left to the agent:** when to halt and report, and which choices are explicitly the building agent's.
+- **Extras**, only when the change needs them:
+  - **Compatibility** (existing callers, users, or data): the posture, plus a Surface / Before / After table.
+  - **Permissions** (who can read or write changes): the verb × actor table.
+  - **Entrypoints** (new or changed): each one's refusals, edge cases as worked examples, and the single owner of each irreversible effect.
+  - **Ordering and cutover** (a sequence matters): the order, what breaks if it is compressed, and rollback.
+  - **Stopping rules** (anything that retries, loops, or spends): trigger, terminal states, and caps, each checked against the real timeout, rate limit, or memory limit it must fit, with its source.
+  - **Promote on merge** (a lasting rule or decision): new invariants for the project's invariants list with an ID, and decisions as ADRs, in the same PR.
+
+**4. Proof**
+- **Verifies on:** the services and environments the checks run against, and any environment or helper to set up first.
+- A table of #, proves, surface, check, where it runs, pass signal.
+- Every check must pass to merge. Pass means every step shows its stated result; anything else fails the step. Its fixture can actually be seeded, and it never silently skips. Add an **After deploy** list only if the user decided on one, including when it stops.
 
 ## Writing rules
 
-- Be concise and decision-dense. Write requirements and guarantees, not an implementation laundry list.
-- Include only user-decided or playback-confirmed policy. A value the user explicitly deferred may appear in Open Questions; an unasked question sends you back to the interview.
-- Give every invariant one enforcement/detection line: schema constraint, unavoidable chokepoint, authorization boundary, runtime guard, or named test — marked machine-runnable or human-judgment. A human-judgment-only check on a load-bearing invariant must be a confirmed decision, not a leftover.
-- List the door names alone — no signatures or bodies — and mark which guard irreversible effects. The bare list must read as a description of what the system does.
-- Describe current state as verified, including leaking or duplicated effect paths.
-- Include the smallest useful diagram when required by the doors reference.
-- Include an executable verification plan: exact commands/requests and observable pass/fail results at system boundaries. Every entry is a decided or playback-confirmed verifier naming what it proves and the environment it runs in — never invent a verification approach at write time. Where an environment is missing, record the separate-work setup recommendation rather than folding the build into this spec.
+- Keep it short. Split a big one into child specs, each with its own proof. Never cut a decided invariant, non-goal, permission or refusal to fit.
+- Write what and why, not how. No SQL, joins, file-by-file steps, or hard-coded numbers or slugs unless a probe backs them.
 
-## Changes to existing behavior
-
-Diff every existing surface whose billing, auth, routing, permissions, cost, or semantics changes. Include rewired routes, changed fallbacks, renamed meanings, different retry behavior, and replaced tooling even when the external shape remains. If nothing changes, state that in one line.
-
-## Verified facts
-
-Fill the template's table from the session record. Use **"I could not verify this"** verbatim for any incomplete check and state the consequence.
-
-## Final consistency read
-
-These checks re-run earlier work against the published text: writing is a fresh generative act that introduces drift, so you are now checking the document, not the design. Before presenting the spec:
-
-1. Compare every actor × verb granted in prose with the matrix cell by cell.
-2. Confirm every route and in-process door agrees on caller, guarantee, refusal, and effect.
-3. Diff ownership and required-value sources in the spec against the session record's shown work (consistency check 1).
-4. Confirm every invariant names an enforcement or detection point and marks its check machine-runnable or human-judgment.
-5. Diff each worked example, boundary/failure case, and creation/transition case against the session record's shown work (consistency check 5); re-execute only rules amended after the consistency pass (a decision-log entry postdating it).
-6. Diff batch arithmetic against the session record's runtime-feasibility work (consistency check 6); recompute only where limits or volumes changed afterward.
-7. Diff the spec's decisions against the confirmed playback.
-8. Confirm every Open Question was actually asked and explicitly deferred.
-9. Confirm every goal, invariant, and changed behavior maps to a Verification plan entry whose verifier was decided in the interview; playback confirmation restates interview decisions, it does not originate verifiers.
-
-Report the issue URL (or file path), a concise executive summary, the door names alone, irreversible effect doors, and any explicitly deferred questions.
+After publishing, run Done's four checks on the published spec and diff it against the confirmed playback; fix anything with `gh issue edit` (or the file). Then report the URL or path, the entrypoints, the irreversible effects, and anything deferred.
