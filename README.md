@@ -1,8 +1,6 @@
 # Ray's Skills
 
-Skills for shipping real products with Claude Code.
-
-These are the skills I actually use, day to day, to ship software. Small, composable, and easy to adapt. Steal them, fork them, make them your own.
+[Bitter lessonned](http://www.incompleteideas.net/IncIdeas/BitterLesson.html) skills made to be deleted when models improve.
 
 ## Install
 
