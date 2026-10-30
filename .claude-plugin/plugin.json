@@ -1,0 +1,15 @@
+{
+  "name": "prove-it",
+  "version": "0.1.0",
+  "description": "Make your coding agent prove its work. Generate, maintain and audit a verification skill for your own repo.",
+  "author": { "name": "Ray Amjad", "url": "https://www.agenticcoding.school" },
+  "homepage": "https://www.agenticcoding.school",
+  "repository": "https://github.com/ray-amjad/skills",
+  "license": "MIT",
+  "keywords": ["verification", "testing", "evidence", "playwright", "skills"],
+  "skills": [
+    "./skills/create-prove-it",
+    "./skills/maintain-prove-it",
+    "./skills/audit-prove-it"
+  ]
+}

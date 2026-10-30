@@ -1,0 +1,11 @@
+{
+  "name": "ray-amjad",
+  "owner": { "name": "Ray Amjad", "url": "https://www.agenticcoding.school" },
+  "plugins": [
+    {
+      "name": "prove-it",
+      "source": "./",
+      "description": "Make your coding agent prove its work. Generate, maintain and audit a verification skill for your own repo."
+    }
+  ]
+}

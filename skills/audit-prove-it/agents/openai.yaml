@@ -1,0 +1,3 @@
+interface:
+  display_name: "Audit Prove It"
+  short_description: "Plant bugs to see if your verifier can be fooled"
