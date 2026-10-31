@@ -35,8 +35,6 @@ A surface is where a user, human or program, meets the app. That is the only pla
 | Library | a package export other code imports |
 | Agent / prompt | prompts, tool definitions, an agent loop |
 
-Code that is internal (a helper, a service class) is not a surface. Follow its callers until they end at one of the rows above, and note that path. It tells the future agent where to look when it changes that helper.
-
 Name a primary surface (the one most users touch) and list the rest.
 
 ## 2. Check you can reach them
