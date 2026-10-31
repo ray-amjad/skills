@@ -1,6 +1,6 @@
 ---
 name: create-prove-it
-description: Generate a project-local verification skill (prove-<app>) that proves this repo's app really works, by launching it, health-checking it, driving it the way a user does (browser, CLI, API, database, logs), capturing evidence and cleaning up. Starts with a brainstorm of every way this repo could be verified, what each catches, what each costs and whether the agent can reach it from here, then lets the user pick. Use for /create-prove-it, "make a verify skill for this repo", "set up verification", "how should the agent check its own work here", "the agent keeps saying done without testing", or whenever a project has no repeatable way for an agent to prove a change works in the real app.
+description: Generate a project-local verification skill (prove-<app>) that an agent runs at the end of a change, before it says done. It works out from the diff (or a flow the user names) which surfaces and user flows the change reaches, then proves them in the real app by launching it, health-checking it, driving it the way a user does (browser, CLI, API, database, logs), trying to break it, saving a receipt and cleaning up. Starts with a brainstorm of every way this repo could be verified, what each catches, what each costs and whether the agent can reach it from here, then lets the user pick. Use for /create-prove-it, "make a verify skill for this repo", "set up verification", "how should the agent check its own work here", "the agent keeps saying done without testing", or whenever a project has no repeatable way for an agent to prove a change works in the real app.
 ---
 
 # Create Prove It
@@ -15,11 +15,10 @@ The steps, in order:
 2. Check you can reach them
 3. Brainstorm methods, then let the user pick
 4. Generate the skill
-5. Seed the feature list
-6. Run it once for real
-7. Hand over
+5. Run it once for real
+6. Hand over
 
-Don't skip step 6. A verification skill nobody has run is a guess.
+Don't skip step 5. A verification skill nobody has run is a guess.
 
 ## 1. Map the surfaces
 
@@ -48,7 +47,7 @@ If the checkout does not start as-is, fix it if the fix is small and obviously s
 
 When a surface is out of reach, don't quietly drop it. Suggest the unlock that would make it reachable. See [references/unreachable-surfaces.md](references/unreachable-surfaces.md) for the common blockers and their fixes (sandbox or container, local emulator, headless browser, seeded test account, staging URL, simulator). The user decides whether the unlock is worth it; your job is to make sure they know it exists.
 
-**Presence is not access.** For every key, env var or account the verifier will need, make one cheap authenticated call now (a whoami, a list, a login) and note the result. A variable that is set but empty, a secret that reads back blank or an expired token should surface here, not as a 401 forty minutes into a run. If features differ by role or plan, check one account per role. Then tell the user, in one message, exactly what is missing and what they would need to supply or sign in to. Stop before anything that takes their card, password or 2FA.
+**Presence is not access.** For every key, env var or account the verifier will need, make one cheap authenticated call now (a whoami, a list, a login) and note the result. A variable that is set but empty, a secret that reads back blank or an expired token should surface here, not as a 401 forty minutes into a run. If the app behaves differently by role or plan, check one account per role. Then tell the user, in one message, exactly what is missing and what they would need to supply or sign in to. Stop before anything that takes their card, password or 2FA.
 
 ## 3. Brainstorm, then let the user pick
 
@@ -73,15 +72,20 @@ Then ask the user to pick, as a multi-select question with the recommended combo
 
 **Where it goes.** Write it into the project skills folder of the agent you are running in: `.claude/skills/prove-<app>/` for Claude Code, `.agents/skills/prove-<app>/` for Codex. If the repo already uses one of those folders, use that one. In a monorepo where only one package has the app, put it in that package's skills folder. Name it `prove-` plus a short app name (`prove-shop`, `prove-billing-api`), so `/prove-<app>` is what an agent types before saying done. If a `prove-*` skill made by Prove It already exists, don't overwrite it: read it, then extend it or add a sibling, and tell the user which you chose.
 
+**When it runs.** The generated skill runs at the end of a change or PR, before the agent says done. By default it proves the current change: uncommitted work plus the commits on the branch since it left its base. It reads the diff, follows each changed file to the surfaces and user flows it reaches (the same caller-following you did in step 1), drives those in the running app and tries to break them. A user can instead name a flow ("prove checkout"), and then it proves that flow. It never proves a fixed set of features in general: the diff decides what gets driven.
+
 **What goes in it.** Follow [references/skill-template.md](references/skill-template.md). Every section must be filled from what you actually saw in steps 1 to 3:
+
+- **Scope**: how to work out the diff (the base branch, the exact git commands) and a map from the repo's folders to the surfaces and flows they reach, so the next agent can go from a changed file to what to drive in one lookup. Internal code goes in the map with the path you traced in step 1.
 
 - **Start**: the exact command, an isolated port and data location, and how to tell it is *usable*, not just listening. The start script must fully detach the app (redirect its stdin, stdout and stderr) so a caller doing `RUN=$(start.sh)` gets control back. A start script that hangs its caller is the most common first bug.
 - **Health check**: one read-only command that answers "is this instance worth driving?" It also prints identity: which target (local, staging or prod, host, database) and which build (commit or version), so a check never runs against the wrong copy or a stale build. Don't trust "no rows found" until the store has shown a row you know exists.
 - **Drive**: one recipe per method the user picked, with this repo's real selectors, routes and commands. Prefer stable handles (ARIA labels, test ids, route paths, exact CLI output) over coordinates or text that changes. Include a **bug fix** recipe: run the probe on the unchanged code first to see the failure and record the value that shows it (status, row count, text), then after the fix to see that value change. If the failure doesn't reproduce first, say so and stop.
 - **Deploy check** (only if the user ships by deploying): wait until the new build is actually serving, then drive the public entry point (public URL, published package) with no insider shortcuts, and label each receipt line with the environment it came from.
-- **Try to break it**: the probes worth running on this app (empty input, doing it twice, stale state, wrong method, bad id), plus a cold start (empty data, no optional secrets) and one sibling feature that should behave the same way.
+- **Try to break it**: the probes worth running on this app (empty input, doing it twice, stale state, wrong method, bad id), plus a cold start (empty data, no optional secrets) and one sibling flow that should behave the same way.
 - **Evidence and receipt**: where proof is saved and the receipt format.
 - **Clean up**: stop only what this run started, and never delete the evidence.
+- **Done looks like and could fool you**: per surface or method, a few lines on what a finished change looks like there (the end state a user expects, side effects included), what differs by role, plan or platform, behaviour that looks like a bug but is deliberate, and how a check on that surface could pass while the app is broken. Keep it short. This is what stops the next agent calling a half-done change done.
 - **Gotchas**: anything that tripped you up in step 2.
 
 **Make the checks hard to fool.** When Prove It was tested, `/audit-prove-it` planted 7 bugs in a sample app. The agents doing the checking caught 5, but the generated scripts caught only 1. The rules below close the gaps it found:
@@ -89,48 +93,26 @@ Then ask the user to pick, as a multi-select question with the recommended combo
 - **Seed more than one record**, some in each state (two done, two open). With one row, "counts only the first", "ticks every row" and an off-by-one counter all pass.
 - **Check every action in reverse too**: untick, undo, remove the thing you added.
 - **Let stand-ins fail.** A fake email or payment provider that always says yes can't show you the error path. Give it a switch that makes it fail, and check the app reports the failure instead of claiming success.
-- **Assert every field in "Done looks like"**, not just the one you care about today.
+- **Assert everything "Done looks like" names for that surface**, not just the field the change is about.
 - **A script pass is not the verdict.** Scripted checks report "checks passed"; only the agent, having looked at the evidence, writes PROVED.
 
 **Scripts.** Put repeatable mechanics in `scripts/` (start, health, stop, and a scripted check per method where possible). Make each one executable and show its exact invocation in SKILL.md. A scripted check is worth a lot here: `/audit-prove-it` can run it blind, and the next agent can rerun it in seconds.
 
-**Evidence location.** Runs save to `.prove-it/runs/<UTC timestamp>-<slug>/` at the repo root. Add `.prove-it/` to `.gitignore`. Write evidence as it is produced, not at the end, so an interrupted run keeps what it proved.
+**Evidence location.** Runs save to `.prove-it/runs/<UTC timestamp>-<slug>/` at the repo root. Add `.prove-it/` to `.gitignore`. Write evidence as it is produced, not at the end, so an interrupted run keeps what it proved. The receipt records what was proved (the diff range or the flow), the surfaces driven, each step's verdict and evidence, failed and retried steps, and the commands that finally worked. `/maintain-prove-it` reads these receipts later to improve the skill, so don't trim that detail.
 
-## 5. Seed the feature list
+## 5. Run it once for real
 
-Create `features.md` next to the skill's SKILL.md. It is the list of promises the app makes to its users, each with how to prove it. Start with the 3 to 6 most important user-facing features (from routes, commands, menus, README). Use this shape:
-
-```markdown
-| Feature | Surfaces | Touches | Last proved |
-|---|---|---|---|
-| Add a task | web, api, cli | server.js, public/app.js | 2026-10-30, a1b2c3d, .prove-it/runs/20261030-1412-add-task |
-
-## Add a task
-**Promise:** what the user expects, in their words.
-**Prove it:** the drive steps, by method.
-**Done looks like:** the observable end state, taken from what the user expects rather than from the latest diff, including side effects (row written, file saved, log line).
-**Variants:** every role, plan, provider or platform this feature behaves differently on, each marked proved or unproven. The feature isn't proved while a variant is unproven.
-**Known and deliberate:** behaviour that looks like a bug but is intended, so nobody reports it.
-**Could fool you:** how this check could pass while the feature is broken, and what covers that.
-```
-
-"Touches" lists the files or routes the feature runs through. `/maintain-prove-it` matches it against git to work out which features need re-proving. Drop the Variants and Known lines when they don't apply.
-
-The "Could fool you" line is what keeps the list honest, and what `/audit-prove-it` attacks later. If the seed data can't satisfy a feature's precondition, the proof fails and the reason goes in that line. Never weaken a proof to make it pass.
-
-## 6. Run it once for real
-
-Follow the generated skill exactly as written, as if you had never seen this repo: start, health check, drive ONE feature with every method the user picked, run at least one break-it probe, write the receipt, clean up. Then confirm:
+Follow the generated skill exactly as written, as if you had never seen this repo: start, health check, prove ONE named flow (the main thing the primary surface is for) with every method the user picked, run at least one break-it probe, write the receipt, clean up. Then confirm:
 
 - the receipt and screenshots still exist after cleanup,
 - no process or port you started is still alive,
 - the repo has no new untracked files except `.prove-it/` and the skill itself.
 
-Anything that fails is a bug in the skill. Fix it, run cleanup, run again. Keep going until a clean run passes. Fill in "Last proved" for the feature you drove.
+Anything that fails is a bug in the skill. Fix it, run cleanup, run again. Keep going until a clean run passes. Then check the Scope step on a real diff: run it against the last commit that changed product code and confirm it names the surfaces and flows you would have picked by hand.
 
 If you had to prove it in a stand-in (a container instead of the user's real setup, a local stack instead of staging), list every step the stand-in did for you that the real target will not.
 
-## 7. Hand over
+## 6. Hand over
 
 Report, briefly:
 
@@ -138,4 +120,4 @@ Report, briefly:
 - the methods the user picked (or that you picked for them, and why),
 - where the skill lives and how to invoke it,
 - the receipt from the proving run, with the key evidence inline (command output, response body, a screenshot path),
-- what is next: `/maintain-prove-it` after features change, `/audit-prove-it` to see whether the skill can be fooled.
+- what is next: run `/prove-<app>` at the end of every change, `/maintain-prove-it` after prove has run a few times (or a bug slipped past it) to fold what the runs learned back into the skill, `/audit-prove-it` to see whether the skill can be fooled.

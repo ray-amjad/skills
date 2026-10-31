@@ -1,3 +1,3 @@
 interface:
   display_name: "Create Prove It"
-  short_description: "Generate a verifier skill that proves your app works"
+  short_description: "Generate a verifier that proves each change in the real app"

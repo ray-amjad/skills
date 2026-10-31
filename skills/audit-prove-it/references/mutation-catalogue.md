@@ -1,6 +1,6 @@
 # Bugs to plant, by layer
 
-Pick across layers. A good audit has at least one bug the UI hides, one the API hides and one that only shows in stored state or logs.
+Plant them in the files the target change or flow runs through. Pick across layers. A good audit has at least one bug the UI hides, one the API hides and one that only shows in stored state or logs.
 
 ## UI only (data is fine, the screen lies)
 - A counter or total that reads one item off (`open - 1`), or counts the wrong items.
