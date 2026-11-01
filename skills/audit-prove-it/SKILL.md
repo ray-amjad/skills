@@ -1,6 +1,6 @@
 ---
 name: audit-prove-it
-description: Try to fool a repo's verification skill (prove-<app>, made by /create-prove-it). Plants one deliberate bug at a time in the files the current change touched (or along a flow the user names), has the skill check that change or flow without knowing what was planted, records whether it caught the bug, reverts exactly, and reports every miss with a suggested fix to the skill. Use for /audit-prove-it, "can the verifier be fooled", "test the verify skill", "is our verification any good", "mutation test the verifier", or after creating or heavily editing a prove-* skill.
+description: Try to fool a repo's verification skill (prove-<app>, made by /create-prove-it). Plants one deliberate bug at a time in the files the current change touched (or along a flow the user names), has a fresh agent check that change or flow with the skill and its answer keys, without knowing what was planted, records whether it caught the bug, reverts exactly, and reports every miss with a suggested fix to the skill and to the flow's answer key. Use for /audit-prove-it, "can the verifier be fooled", "test the verify skill", "is our verification any good", "mutation test the verifier", or after creating or heavily editing a prove-* skill.
 ---
 
 # Audit Prove It
@@ -44,7 +44,7 @@ Write the plan as a table before you touch anything: id, flow, layer, file, the 
 For each bug:
 
 1. **Back up and plant.** Copy the file to the originals folder, then make the change. Restart the app if the skill's Start section says code changes need a restart.
-2. **Check blind.** The checker must not know what you planted, or it will go looking for it, which proves nothing. If your agent can start a sub-agent (the Agent tool in Claude Code, or a subagent in Codex), give it only this: "Use the `prove-<app>` skill to prove these flows in this repo: `<the flows and surfaces from the baseline receipt>`. Report PROVED or BROKEN with evidence." No hint about the bug, the file or the layer. Hand it the flows by name instead of the diff, and tell it not to read `git diff`, `git status`, `git log` or `.prove-it/audits/`: the planted bug sits in the working tree, so any of these would give it away. Tell it to keep any scratch files inside its run folder. If you can't start a sub-agent, run the skill's scripted checks only and mark the result "not blind" in the report.
+2. **Check blind.** The checker must not know what you planted, or it will go looking for it, which proves nothing. If your agent can start a sub-agent (the Agent tool in Claude Code, or a subagent in Codex), give it only this: "Use the `prove-<app>` skill to prove these flows in this repo: `<the flows and surfaces from the baseline receipt>`, against these answer keys: `<each flow's answer key from the skill's Answer keys section>`. Report PROVED or BROKEN with evidence." No hint about the bug, the file or the layer. The answer keys are not hints: a real checker gets them too. Hand it the flows by name instead of the diff, and tell it not to read `git diff`, `git status`, `git log` or `.prove-it/audits/`: the planted bug sits in the working tree, so any of these would give it away. Tell it to keep any scratch files inside its run folder. If you can't start a sub-agent, run the skill's scripted checks only and mark the result "not blind" in the report.
 3. **Score** it, and note *what* caught it: the skill's scripts, or the checking agent going off-script. A verifier whose scripts catch little relies on every future agent being as diligent as this one, so report both numbers. Results: **caught** (BROKEN, and the evidence names the planted symptom), **caught by luck** (BROKEN for an unrelated reason), or **missed** (PROVED, or BROKEN with evidence that doesn't touch the planted bug). If you aren't sure the evidence names the symptom, have a second sub-agent read the evidence and decide.
 4. **Revert** by copying the backup over the file, confirm with `cmp`, run the skill's clean-up so no planted-bug instance stays alive.
 
@@ -66,6 +66,7 @@ Score: <caught>/<planted> caught (<n> by the scripts alone), <n> false alarms
 ### <id>: <bug>
 Why it slipped through: <the check that should have seen it and why it didn't>
 Fix to the skill: <the exact step, probe or check to add>
+Fix to the answer key: <the spec line or snapshot that would name this behaviour, or "none needed">
 ```
 
 Say plainly what the score means. A handful of planted bugs shows the misses this run found. A perfect score doesn't mean the verifier catches everything, so the next audit should use a different mix of layers.
@@ -75,3 +76,5 @@ For each miss, the fix is about the skill, never the app. Typical fixes: check s
 ## 5. Offer to close the gaps
 
 Ask the user whether to apply the fixes. If yes, edit only the skill's folder, then re-plant just the missed bugs and run the blind check again. A fix counts only when the re-run catches the bug. Revert and confirm as before. Add the bug that used to slip through to the skill's "Could fool you" notes for that surface, along with what now catches it.
+
+A miss often means the answer key never named the behaviour, so fixing the check alone leaves the next agent free to miss it again. With the user's OK, also add the missed behaviour to the flow's answer key: a line in its spec, or a new snapshot taken from the clean code. If the flow had no answer key, propose one. Never change an answer key without that OK.

@@ -1,6 +1,6 @@
 ---
 name: maintain-prove-it
-description: Improve a repo's generated verification skill (prove-<app>, made by /create-prove-it) from what its past runs learned. Runs after prove has run, at the end of a diff or on demand. Reads the receipts in .prove-it/runs/ (failed and blocked steps, retries, the commands that finally worked, steps that failed for reasons unrelated to the change) and any bug a user reports that slipped past prove, then fixes drifted steps, writes in the working commands, adds the check that would have caught a slipped bug and covers surfaces that recent diffs added. Proves every edit live and reports product bugs without touching product code. Use for /maintain-prove-it, "update the verify skill", "the verifier is out of date", "prove missed this bug", "prove keeps failing on unrelated steps", or after a big merge or refactor.
+description: Improve a repo's generated verification skill (prove-<app>, made by /create-prove-it) from what its past runs learned. Runs after prove has run, at the end of a diff or on demand. Reads the receipts in .prove-it/runs/ (failed and blocked steps, retries, the commands that finally worked, steps that failed for reasons unrelated to the change) and any bug a user reports that slipped past prove, then fixes drifted steps, writes in the working commands, adds the check that would have caught a slipped bug (proposing an answer key where its flow had none) and covers surfaces that recent diffs added, with their answer keys. Never rewrites an answer key (spec, snapshot) to match the app. Proves every edit live and reports product bugs without touching product code. Use for /maintain-prove-it, "update the verify skill", "the verifier is out of date", "prove missed this bug", "prove keeps failing on unrelated steps", or after a big merge or refactor.
 ---
 
 # Maintain Prove It
@@ -11,6 +11,7 @@ A verification skill goes stale the day the app changes: a route moves, a button
 
 - **Only edit the skill's own folder** (SKILL.md, scripts/). Never change product code here.
 - **When the app and the skill disagree, work out which one is wrong.** The skill describing something the app no longer does is either *drift* (the app changed on purpose: fix the skill) or a *product bug* (the app broke: report it, don't rewrite the skill to match the bug). Read the commit that changed it. If you still can't tell, ask.
+- **Answer keys are not the skill's steps.** Spec files, snapshots and the old system a flow is compared with say what right looks like. A drifted step can be fixed, but an answer key that disagrees with the app is reported to the user, never rewritten to match. Only the user changes one.
 - **Every edit you make to the skill gets proved live before you finish.** An unproven edit is just more drift.
 - **Old verdicts are leads, not evidence.** Earlier receipts, closed tickets and status docs tell you where to look. Only this pass's live runs count.
 - **Never loosen a check to make a flaky step pass.** Record the failing run, then decide whether the app has a race or the check is ambiguous.
@@ -41,10 +42,11 @@ Turn the notes into a list of edits, each tied to the receipt or bug that shows 
 
 - **Drifted step**: the app changed on purpose and the step didn't. Fix the step.
 - **Working command**: a retry found what works (a port, a wait, an auth step, a flag). Write it into the skill now, while the receipt still says exactly what it was.
-- **Slipped bug**: add the check that would have caught it, and name that kind of bug in the surface's "Could fool you" notes along with what now catches it.
-- **New surface or path**: recent diffs added a route, page, command, job or folder the Scope map doesn't reach. Add it to the map, with a drive recipe and "Done looks like" notes. Only call it new if you can name the file that adds it.
+- **Slipped bug**: add the check that would have caught it, and name that kind of bug in the surface's "Could fool you" notes along with what now catches it. If the flow had no answer key (rung 5), propose one: a parity check against an old system, a snapshot from a trusted version, or spec lines the user approves.
+- **New surface or path**: recent diffs added a route, page, command, job or folder the Scope map doesn't reach. Add it to the map, with a drive recipe, its answer key and rung, and "Done looks like" notes. If an existing surface does the same job, its answer key is parity with that surface. Only call it new if you can name the file that adds it.
 - **Removed surface**: take its map row and recipe out, citing the commit that removed it.
 - **Launch changes** (new env var, port, service, migration, dependency): update Start and Health.
+- **Answer key disagrees with the app**: a spec line or snapshot no longer matches what the app does. Don't touch it. Report it with the evidence, and the commit that changed the behaviour, so the user can decide whether the app or the answer key is wrong.
 - **Product bug**: the app is really broken. Record it with the evidence. It is for the user, not this pass.
 
 ## 5. Edit and prove live
@@ -67,6 +69,7 @@ Clean up after the last drive, including after failed attempts. Then check the e
 - **Outcome:** `current` (nothing needed changing), `updated` (the skill changed, and every change was proved live) or `blocked` (say exactly what stopped you).
 - What changed in the skill, one line each, with the receipt or bug that called for it.
 - Product bugs found, with evidence. These are for the user to fix, not this pass.
+- Answer keys that disagree with the app, and answer keys you propose, for the user to approve.
 - Surfaces left unproven and why.
 
 If the repo uses git, leave the skill changes uncommitted unless the user asks you to commit.

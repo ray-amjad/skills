@@ -1,6 +1,17 @@
 # Verification methods
 
-The menu for the brainstorm in step 3. Keep only the rows that match a surface you found. Rewrite "catches" and "misses" in terms of the actual repo before you show them to the user.
+The menu for the brainstorm in step 4. Keep only the rows that match a surface you found. Rewrite "catches" and "misses" in terms of the actual repo before you show them to the user.
+
+Most methods are ways to drive a surface. Three of them (old system parity, snapshot, an independent test suite) are also answer keys: they say what right looks like. Their rung on the ladder is noted.
+
+## Old system parity
+
+Drive the same action through the old system and the new one, or through two surfaces that should agree (the web app and its API, the API and a new MCP server), then compare the outputs and the stored state each one leaves.
+
+- **Catches:** behaviour that drifted in a port or a refactor, and a new surface that disagrees with the one users already trust: a missing field, a different error for the same bad input, a write that lands differently.
+- **Misses:** bugs both systems share, and behaviour the old system never had. Differences that are meant (new ids, timestamps, a bug the new one fixes) need a written list, or every run is noise.
+- **Cost:** the old system has to run beside the new one (main in a worktree under `/tmp`, the deployed build, or a second port). Per run, about twice the drive.
+- **Answer key:** rung 1, the strongest. Check read parity, error parity and a lifecycle round trip (create, edit, delete through one surface, read back through the other).
 
 ## Browser, driven like a user
 
@@ -52,13 +63,14 @@ Catch what leaves the app: emails (Mailpit, a log transport), webhooks (a local 
 - **Misses:** delivery in the real provider.
 - **Cost:** medium setup (a local catcher), cheap per run.
 
-## Visual comparison
+## Snapshot
 
-Screenshot a page and compare it with an approved baseline.
+Save a known good result before the change (a screenshot, API response bodies, CLI output, generated files) to `.prove-it/snapshots/`, then compare after.
 
-- **Catches:** layout and style regressions no assertion mentions.
-- **Misses:** behaviour. Noisy when content is dynamic.
-- **Cost:** medium. Baselines need upkeep. Offer it only when the app is visual and stable.
+- **Catches:** layout and output regressions no assertion mentions, a response field that quietly changed, a generated file that grew a line.
+- **Misses:** whether the result was right in the first place. A snapshot shows "same as before", not "correct", so a bug in the snapshot becomes the answer. Take it from a version the user trusts (main, the deployed build), never from the change being proved.
+- **Cost:** medium. Mask dynamic content (timestamps, ids, avatars, animation) or every run differs. A change that is meant to alter the output needs the user to approve a new snapshot; the checker never replaces one to make a run pass.
+- **Answer key:** rung 2.
 
 ## Library boundary
 
@@ -84,3 +96,4 @@ Run the repo's own tests.
 - **Misses:** everything the tests mock, and everything the running app does differently from the tests.
 - **Cost:** whatever CI costs.
 - **Note:** list it so the user sees the trade-off, but it never counts as proof on its own. Proof means the running app was observed.
+- **Answer key:** rung 3, but only when the suite does not depend on the code it checks: it drives the public surface and would pass against any correct implementation (Bun's TypeScript tests when it was ported from Zig to Rust). Unit tests written next to the code, or by the agent making the change, are not an answer key.
