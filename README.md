@@ -2,6 +2,9 @@
 
 **Skills that make your coding agent prove its work.**
 
+> [!NOTE]
+> **Beta.** Prove It is new and still changing. The skills work, but expect rough edges and breaking changes between versions. If something goes wrong or reads unclear, [open an issue](https://github.com/ray-amjad/skills/issues).
+
 Your agent says "done". The tests pass. The code looks right. Then you open the app and the button does nothing.
 
 Prove It gives your repo its own verification skill: one that launches your real app, drives it the way a user does, saves the evidence and cleans up after itself. Then it keeps that skill honest, and tries to fool it.
