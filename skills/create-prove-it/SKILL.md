@@ -93,6 +93,7 @@ Name them per surface and per check:
 - **Check 1, per surface.** Does this surface copy another? Then its answer key is parity with that one (rung 1). For an MCP server that copies the app: reading a record through both gives the same fields (read parity), bad input gets the same refusal (error parity), and create, edit and delete through MCP leave the same stored state as doing it in the app (lifecycle round trip). Otherwise check 1 uses the spec the skill finds at run time (rung 4).
 - **Check 2, per surface.** The app before the change. Say how: snapshots already in `.prove-it/snapshots/`, snapshots you take now from main for the main flows, or the base commit run in a worktree under `/tmp` on a second port.
 - **For a migration**, the old system is the answer key (rung 1), plus an independent test suite if one exists (rung 3). Agree with the user on the inputs (recorded traffic, a fixture set, the old system's own test inputs) and on the list of differences that are allowed (ids, timestamps, a bug the new system fixes on purpose). Anything off that list is BROKEN.
+- **Budgets are answer keys too.** A number the user sets (a layout shift score, a load time, an accessibility score, zero console errors) gives a clear pass or fail with no judgment. Name one per surface where it fits.
 - **Say who wrote it.** A human, the old system, a snapshot taken from a version the user trusts, or a spec agreed before the code. Never the agent that will make future changes: it would grade its own work.
 - **Never edit an answer key to make a check pass.** Only the user changes one.
 - **Flag every flow whose only answer key is "nothing"** and tell the user. Offer the cheapest way up the ladder, usually a snapshot taken now from main.
@@ -115,6 +116,8 @@ Rules for the table:
 
 Under the table, recommend a combination in two or three sentences: usually the primary surface driven end to end, plus one cheap check that covers what the primary misses (a stored-state check under a UI flow, a log scan for swallowed errors). For a migration, recommend how to compare old and new: shadow traffic, byte-for-byte output, or stored state after the same inputs.
 
+Offer measurable budgets in the table where they fit (see the method in methods.md). Then go past the catalogue: ask what the user cares about for this app (speed, accessibility, SEO, design system rules, cost per request, a flow that must never break) and propose a measurable check for each goal, even one that methods.md doesn't list. The best checks often come from the user's goals, not from the code.
+
 Then ask the user to pick, as a multi-select question with the recommended combo first. Use your agent's question tool if it has one (AskUserQuestion in Claude Code), otherwise ask in chat and wait. If nobody can answer, go with the recommendation and say clearly in the final report that you chose for them.
 
 ## 5. Generate the skill
@@ -126,6 +129,7 @@ Then ask the user to pick, as a multi-select question with the recommended combo
 **What goes in it.** Follow [references/skill-template.md](references/skill-template.md): the permanent template for the app, the temporary one for a migration. Every section must be filled from what you actually saw in steps 1 to 4. The parts that matter most:
 
 - **Scope**: how to work out the diff (the base branch, the exact git commands) and a map from the repo's folders to the surfaces and flows they reach. Mark shared code (schema, auth, nav, shared components and functions) and what it reaches, since that decides check 2. A migration's Scope is everything it covers, not the diff.
+- **Description**: write it so an agent runs the skill on its own, without being asked. Name the surfaces and the folders it covers, and say "Use on your own after any change to <those>, before saying it is done." A skill an agent has to be reminded of is only half a verifier.
 - **Sort the change** (permanent only): the first step after Scope. A short checklist that sorts each changed behaviour (new or old, copies something or not, did the change also edit the thing it copies) and picks check 1, check 2 and their answer keys. It is the flow chart in the README, as text.
 - **Find the spec** (permanent only): where to look for check 1's spec, and what to do when there is none.
 - **One section per surface**: how to drive it, what it copies (its parity answer key, or "nothing"), what done looks like there, and how a check there could fool you.
@@ -160,6 +164,8 @@ Follow the generated skill exactly as written, as if you had never seen this rep
 - the repo has no new untracked files except `.prove-it/` and the skill itself.
 
 Anything that fails is a bug in the skill. Fix it, run cleanup, run again. Keep going until a clean run passes. Then check Scope and Sort on a real diff: run them against the last commit that changed product code and confirm they name the flows, checks and answer keys you would have picked by hand.
+
+Then check it runs on its own: give a fresh agent a small change to the main flow without mentioning the skill, and confirm it runs `prove-<app>` before it says done. If it doesn't, sharpen the description (name the folders and surfaces it covers) and try again. Say in the hand over whether it triggered.
 
 If the new surface isn't built yet, prove the side that exists (the surface it copies, the snapshots) and list the new section's flows as pending in the receipt.
 

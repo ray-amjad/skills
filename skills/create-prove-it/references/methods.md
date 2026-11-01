@@ -83,6 +83,15 @@ Save a known good result before the change (a screenshot, API response bodies, C
 - **Cost:** medium. Mask dynamic content (timestamps, ids, avatars, animation) or every run differs. A change that is meant to alter the output needs the user to approve a new snapshot; the checker never replaces one to make a run pass.
 - **Answer key:** rung 2.
 
+## Measurable budget
+
+A number the user sets, measured on the running app: layout shift and the other Core Web Vitals from a Chrome DevTools performance trace, page load or response time, an accessibility score, bundle size, zero console errors, cost or tokens per request.
+
+- **Catches:** the page that jumps as it loads, the slow query a change added, the button with no label, the warning nobody reads. Things that work but are worse.
+- **Misses:** whether the feature does the right thing. Pair it with a drive, never use it alone.
+- **Cost:** low to medium. Pick a tool the agent can run every time (Chrome DevTools MCP, Lighthouse CLI, axe, `curl -w`), and measure more than once when the number is noisy.
+- **Answer key:** the budget itself, set by the user, never by the checker. Pass or fail is a number, so no judgment is needed.
+
 ## Library boundary
 
 Write a tiny sample program that imports the package the way a consumer does (the public export, not `./src/...`) and run it.
