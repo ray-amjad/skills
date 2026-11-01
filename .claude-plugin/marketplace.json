@@ -1,0 +1,12 @@
+{
+  "name": "ray-amjad",
+  "owner": { "name": "Ray Amjad", "url": "https://www.agenticcoding.school" },
+  "description": "Ray Amjad's agent skills, as an installable plugin.",
+  "plugins": [
+    {
+      "name": "ray-amjad-skills",
+      "source": "./",
+      "description": "Ray Amjad's agent skills. Starts with Prove It: generate, maintain and audit a verification skill that makes your coding agent prove its work."
+    }
+  ]
+}
