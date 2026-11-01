@@ -17,6 +17,7 @@ A surface you can't drive is the most likely place for an unproven bug. Never dr
 | Production-only data or behaviour | A staging URL with a test account, or a seed script that creates a realistic local copy. Never verify by writing to production. |
 | Destructive actions (delete, publish, send, charge) | A dry-run flag if one exists (check what it actually skips by watching files, network and git), a disposable target (a test inbox, a scratch bucket), or leave it undriven and say so in the receipt. |
 | Port, profile or data dir shared with the user's own running copy | A separate port, a temp data dir (`mktemp -d`), a separate browser profile and tmux socket. If the app can't run twice, the skill must refuse to drive an instance it didn't start. |
+| A migration's old system can't run beside the new one (retired hardware, a licence, a shared database) | Record its outputs for a fixed set of cases now, while it still runs, and compare the new system against those snapshots. Or shadow real traffic in staging, where the old one still runs. |
 | Needs secrets the agent doesn't have | Ask the user to add them through their normal secret store. Don't ask them to paste secrets into the chat. |
 
 When you present an unlock, give the user the cost: "about 5 minutes once, then nothing per run", or "needs a Stripe test account". Let them choose. Record unlocks they turn down in the generated skill's Gotchas so the next agent knows that surface is unproven and why.
