@@ -2,7 +2,7 @@
 
 The menu for the brainstorm in step 4. Keep only the rows that match a surface you found. Rewrite "catches" and "misses" in terms of the actual repo before you show them to the user.
 
-Most methods are ways to drive a surface. Three of them (old system parity, snapshot, an independent test suite) are also answer keys: they say what right looks like. Their rung on the ladder is noted.
+Most methods are ways to drive a surface. Four of them (old system parity, shadow traffic, snapshot, an independent test suite) are also answer keys: they say what right looks like. Their rung on the ladder is noted.
 
 ## Old system parity
 
@@ -12,6 +12,17 @@ Drive the same action through the old system and the new one, or through two sur
 - **Misses:** bugs both systems share, and behaviour the old system never had. Differences that are meant (new ids, timestamps, a bug the new one fixes) need a written list, or every run is noise.
 - **Cost:** the old system has to run beside the new one (main in a worktree under `/tmp`, the deployed build, or a second port). Per run, about twice the drive.
 - **Answer key:** rung 1, the strongest. Check read parity, error parity and a lifecycle round trip (create, edit, delete through one surface, read back through the other).
+- **Where it is used:** a new flow on a surface that copies another (the MCP server and the app), an existing flow when the base commit runs beside the change, and every flow in a migration skill.
+- **Misses, again:** when one change edits both sides, they can be wrong the same way and parity still passes. Pair it with the spec then.
+
+## Shadow traffic and output diffs (migrations)
+
+Send the same inputs to the old system and the new one: a copy of real requests, recorded traffic replayed, or a fixed set of cases. Diff the responses, the output files or the stored state byte for byte, after normalising the allowed differences.
+
+- **Catches:** any behaviour the rewrite changed, on inputs nobody thought to write a test for.
+- **Misses:** paths the inputs never reach. A diff that ignores too much (a normaliser that strips whole fields) hides real breaks, so keep the allowed-differences list short and agreed with the user.
+- **Cost:** the old system keeps running for the whole migration. Shadow traffic needs a place to copy requests (a proxy, a queue tap) and must never let the new system's writes reach real data.
+- **Answer key:** rung 1. At the end step, the cases become snapshots in the permanent skill.
 
 ## Browser, driven like a user
 
@@ -65,12 +76,21 @@ Catch what leaves the app: emails (Mailpit, a log transport), webhooks (a local 
 
 ## Snapshot
 
-Save a known good result before the change (a screenshot, API response bodies, CLI output, generated files) to `.prove-it/snapshots/`, then compare after.
+Save a known good result before the change (a screenshot, API response bodies, CLI output, generated files) to `.prove-it/snapshots/`, then compare after. Snapshots are answer keys, so commit them.
 
 - **Catches:** layout and output regressions no assertion mentions, a response field that quietly changed, a generated file that grew a line.
 - **Misses:** whether the result was right in the first place. A snapshot shows "same as before", not "correct", so a bug in the snapshot becomes the answer. Take it from a version the user trusts (main, the deployed build), never from the change being proved.
 - **Cost:** medium. Mask dynamic content (timestamps, ids, avatars, animation) or every run differs. A change that is meant to alter the output needs the user to approve a new snapshot; the checker never replaces one to make a run pass.
 - **Answer key:** rung 2.
+
+## Measurable budget
+
+A number the user sets, measured on the running app: layout shift and the other Core Web Vitals from a Chrome DevTools performance trace, page load or response time, an accessibility score, bundle size, zero console errors, cost or tokens per request.
+
+- **Catches:** the page that jumps as it loads, the slow query a change added, the button with no label, the warning nobody reads. Things that work but are worse.
+- **Misses:** whether the feature does the right thing. Pair it with a drive, never use it alone.
+- **Cost:** low to medium. Pick a tool the agent can run every time (Chrome DevTools MCP, Lighthouse CLI, axe, `curl -w`), and measure more than once when the number is noisy. With no DevTools MCP, measure layout shift in Playwright with a `PerformanceObserver` on `layout-shift` entries.
+- **Answer key:** the budget itself, set by the user, never by the checker. Pass or fail is a number, so no judgment is needed.
 
 ## Library boundary
 

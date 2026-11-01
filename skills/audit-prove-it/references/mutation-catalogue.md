@@ -36,5 +36,13 @@ Plant them in the files the target change or flow runs through. Pick across laye
 - An email, webhook or job that is logged as sent but never queued.
 - A side effect sent twice.
 
+## Shared code and parity
+- A change in a shared function both surfaces call (the app and the MCP server), so parity still matches. Only the spec catches it.
+- A schema or auth change that breaks an existing flow the new feature never uses. The skill has to count that flow as touched and check it against the app before the change.
+
+## Migrations (new system only)
+- A field that differs only in a way the allowed-differences list happens to ignore (a trimmed string, a rounded number).
+- Correct output for the cases on file, wrong for a nearby input (an empty list, a unicode name, the largest id).
+
 ## Startup (use at most one)
 - A missing env default or a broken import, so the app fails to start. This only tests the health check.
