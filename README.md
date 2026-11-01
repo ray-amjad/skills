@@ -1,3 +1,5 @@
+![Prove It, beta: skills that make your coding agent prove its work. /create-prove-it builds a verifier for your app, /prove-<app> runs on its own after every change, /maintain-prove-it and /audit-prove-it keep it honest](assets/banner.png)
+
 # Prove It
 
 **Skills that make your coding agent prove its work.**
