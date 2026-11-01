@@ -12,7 +12,7 @@ Drive the same action through the old system and the new one, or through two sur
 - **Misses:** bugs both systems share, and behaviour the old system never had. Differences that are meant (new ids, timestamps, a bug the new one fixes) need a written list, or every run is noise.
 - **Cost:** the old system has to run beside the new one (main in a worktree under `/tmp`, the deployed build, or a second port). Per run, about twice the drive.
 - **Answer key:** rung 1, the strongest. Check read parity, error parity and a lifecycle round trip (create, edit, delete through one surface, read back through the other).
-- **Where it is used:** check 1 for a new surface that copies another (the MCP server and the app), check 2 when the base commit runs beside the change, and every check in a migration skill.
+- **Where it is used:** a new flow on a surface that copies another (the MCP server and the app), an existing flow when the base commit runs beside the change, and every flow in a migration skill.
 - **Misses, again:** when one change edits both sides, they can be wrong the same way and parity still passes. Pair it with the spec then.
 
 ## Shadow traffic and output diffs (migrations)

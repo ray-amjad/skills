@@ -38,7 +38,7 @@ Plant them in the files the target change or flow runs through. Pick across laye
 
 ## Shared code and parity
 - A change in a shared function both surfaces call (the app and the MCP server), so parity still matches. Only the spec catches it.
-- A schema or auth change that breaks an old flow the new feature never touches. Check 2 has to find it.
+- A schema or auth change that breaks an existing flow the new feature never uses. The skill has to count that flow as touched and check it against the app before the change.
 
 ## Migrations (new system only)
 - A field that differs only in a way the allowed-differences list happens to ignore (a trimmed string, a rounded number).

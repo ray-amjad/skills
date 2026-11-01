@@ -27,11 +27,11 @@ Work out the target. By default it is the current change: the files touched by u
 
 Record `git status --porcelain` so you can compare at the end.
 
-Run the skill once on the untouched target. **It must come back PROVED.** If the clean change already fails, any "catch" later means nothing. Fix that first, or suggest `/maintain-prove-it`, and leave the failing surface out of the audit. Note the surfaces and flows the baseline receipt drove, and how it sorted each one (check 1 or check 2, and the answer key): that is the scope you hand the blind checker.
+Run the skill once on the untouched target. **It must come back PROVED.** If the clean change already fails, any "catch" later means nothing. Fix that first, or suggest `/maintain-prove-it`, and leave the failing surface out of the audit. Note the surfaces and flows the baseline receipt drove, and how it sorted each one (new or existing flow, and the answer key): that is the scope you hand the blind checker.
 
 ## 2. Plan the bugs
 
-Plan 4 to 8 bugs in the target's files, spread across surfaces and layers, so the audit finds the blind spots instead of hitting the same check eight times. Prefer the lines the change itself added or edited: that is where a real bug in this change would be. [references/mutation-catalogue.md](references/mutation-catalogue.md) lists bug types by layer. Aim them at the skill's "Could fool you" notes first, since those are its own admitted weak spots. Put at least one in shared code an old flow runs through, to test that check 2 finds it, and, for a surface that copies another, one in the code both sides share, to test whether parity alone misses it.
+Plan 4 to 8 bugs in the target's files, spread across surfaces and layers, so the audit finds the blind spots instead of hitting the same check eight times. Prefer the lines the change itself added or edited: that is where a real bug in this change would be. [references/mutation-catalogue.md](references/mutation-catalogue.md) lists bug types by layer. Aim them at the skill's "Could fool you" notes first, since those are its own admitted weak spots. Put at least one in shared code an existing flow runs through, to test that the skill counts that flow as touched, and, for a surface that copies another, one in the code both sides share, to test whether parity alone misses it.
 
 Each bug must be:
 

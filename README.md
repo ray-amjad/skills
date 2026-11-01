@@ -67,7 +67,7 @@ Answer keys form a ladder, best first:
 4. **A spec**: flows and acceptance criteria written before the code, specific enough to fail.
 5. **Nothing**: the agent decides what right means. The weakest, so Prove It flags it.
 
-Every change gets up to two checks. **Check 1** asks whether the new part works, and runs only when the change adds something. Its answer key is parity with the thing it copies, if it copies something that exists, or else your spec. **Check 2** asks whether the old stuff still works, and runs only on the old flows whose code the diff touched (shared code counts: schema, auth, nav, a shared component). Its answer key is the app before the change. A change made only of new files gets a quick smoke test. Prove It never checks the whole app.
+Prove It checks **what the change touches**: every flow the change touches, each against the answer key that fits it. A **new flow** (the change adds it) is checked against parity with the thing it copies, if it copies something that exists, or else your spec. An **existing flow** the change touched, directly or through shared code (schema, auth, nav, a shared component), is checked against the app before the change. A change made only of new files also gets a quick smoke test of the existing app. Prove It never checks the whole app.
 
 Prove It never writes your spec either. It finds the one you already wrote, in the PR, the issue or the diff, or asks you for it.
 
@@ -81,13 +81,13 @@ The rule: if the old thing is deleted at the end, it is a migration. If the old 
 ```mermaid
 flowchart TD
   A["A change reaches a surface"] --> B{"Is the old system deleted at the end?"}
-  B -- "yes: migration" --> M["Temporary prove-migration skill<br/>Check 2 only, on everything it covers<br/>Answer key: the old system"]
+  B -- "yes: migration" --> M["Temporary prove-migration skill<br/>Touches everything the migration covers<br/>Answer key: the old system"]
   B -- "no" --> P{"Permanent prove-app skill<br/>Does the change add something new?"}
-  P -- "no: refactor or fix" --> C2["Check 2 only, on the old flows the diff touched<br/>Answer key: the app before the change"]
-  P -- "yes" --> C{"Check 1: does the new part copy something that exists?"}
+  P -- "no: refactor or fix" --> C2["Existing flows the change touched<br/>Answer key: the app before the change"]
+  P -- "yes" --> C{"New flow: does it copy something that exists?"}
   C -- "yes" --> PAR["Answer key: parity with that thing"]
   C -- "no" --> SPEC["Answer key: your spec"]
-  PAR --> R["Check 2 on the old flows the diff touched<br/>Answer key: the app before the change"]
+  PAR --> R["Plus the existing flows the change touched<br/>Answer key: the app before the change"]
   SPEC --> R
 ```
 
@@ -95,7 +95,7 @@ flowchart TD
 |---|---|---|
 | Add an MCP server | Permanent, adds an MCP section | Parity with the app (same action, same data) |
 | Change the app and the MCP server together | Permanent | Your spec plus parity: both can be wrong the same way |
-| A mic picker in the app | Permanent | Your spec, and the app before the change for the rest |
+| A mic picker in the app | Permanent | Your spec for the picker, and the app before the change for the existing flows it touched |
 | Python API to Rust | Temporary | The old Python API, with shadow traffic |
 | Next.js to React Router | Temporary | The old Next.js app |
 
@@ -118,7 +118,7 @@ Coding agents fail in the same few ways. Each skill fixes one.
 
 You pick the methods. It writes the skill using your repo's real commands and selectors, then runs it once, end to end, and shows you the receipt. The proof runs in a fresh sub-agent that sees the flows and answer keys but not the builder's reasoning. A BROKEN verdict goes back to the builder to fix, then the check runs again, up to 3 rounds.
 
-![A prove run after adding a mic picker: the agent runs /prove-recorder on its own, a fresh checker sorts the change into check 1 against the spec and check 2 against main, and the report lists PROVED for macOS and Linux, Couldn't prove: Windows, the numbers for each check and the receipt](assets/prove-run.png)
+![A prove run after adding a mic picker: the agent runs /prove-recorder on its own, a fresh checker checks the new picker against the spec and the recording page against main, and the report lists PROVED for macOS and Linux, Couldn't prove: Windows, the numbers for each flow and the receipt](assets/prove-run.png)
 
 Adding a surface? Tell it "I'm adding an MCP server". It adds an MCP section to your existing `prove-<app>`, with parity against the app as its answer key (the same action through both should leave the same data). Migrating? Tell it "verify this migration" and it writes a temporary skill instead.
 

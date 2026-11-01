@@ -29,8 +29,8 @@ List the receipts in `.prove-it/runs/`, newest first. Start from the runs since 
 - **Steps that failed for reasons unrelated to the change.** These are the clearest sign of drift: the change was elsewhere, but the skill's own step broke.
 - **Not covered** lines that keep coming back, and the unlock each one names.
 - **Scope**: the surfaces each diff reached. A changed path the Scope map doesn't list, or a surface the run drove with no section in the skill, means the map is behind.
-- **Sorted**: how each behaviour was sorted into check 1, check 2, skip or smoke test. A run that checked the whole app, skipped an old flow behind shared code the diff touched, or ran check 1 on parity alone when the change edited both sides, means the Sort checklist or the Scope map's shared-code rows need fixing.
-- **Answer keys used**: check 1 marked `no answer key` again and again means specs aren't reaching the skill. Say so, and suggest where the user could put them (the PR body, a file in the diff).
+- **What the change touches**: each flow the run listed as new or existing, its answer key, and any smoke test. A run that checked the whole app, skipped an existing flow behind shared code the change touched, or checked a new flow on parity alone when the change edited both sides, means the Sort checklist or the Scope map's shared-code rows need fixing.
+- **Answer keys used**: new flows marked `no answer key` again and again means specs aren't reaching the skill. Say so, and suggest where the user could put them (the PR body, a file in the diff).
 
 If there are no receipts, say so. Then the only inputs are reported bugs (step 4) and a fresh run on the current change.
 
@@ -52,7 +52,7 @@ Turn the notes into a list of edits, each tied to the receipt or bug that shows 
 - **Working command**: a retry found what works (a port, a wait, an auth step, a flag). Write it into the skill now, while the receipt still says exactly what it was.
 - **Slipped bug**: add the check that would have caught it, and name that kind of bug in the surface's "Could fool you" notes along with what now catches it. If the flow had no answer key (rung 5), propose one: a parity check against an old system, a snapshot from a trusted version, or spec lines the user approves.
 - **New surface or path**: recent diffs added a route, page, command, job or folder the Scope map doesn't reach. Add it to the map. A new path on a known surface goes into that surface's section. A whole new surface gets its own section, with a drive recipe, what it copies (its parity answer key, if an existing surface does the same job) and "Done looks like" notes. Only call it new if you can name the file that adds it.
-- **Shared code moved**: a schema, auth, nav or shared module was added, split or renamed. Update its row in the Scope map so check 2 still finds the old flows behind it.
+- **Shared code moved**: a schema, auth, nav or shared module was added, split or renamed. Update its row in the Scope map so the skill still finds the existing flows behind it.
 - **Removed surface**: take its map row and recipe out, citing the commit that removed it.
 - **Launch changes** (new env var, port, service, migration, dependency): update Start and Health.
 - **Answer key disagrees with the app**: a spec line, a snapshot or the old system no longer matches what the app does. Don't touch it. Report it with the evidence, and the commit that changed the behaviour, so the user can decide whether the app or the answer key is wrong.

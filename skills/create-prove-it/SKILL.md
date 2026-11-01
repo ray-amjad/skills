@@ -1,6 +1,6 @@
 ---
 name: create-prove-it
-description: Generate a project-local verification skill that an agent runs at the end of a change, before it says done. It asks first whether the skill is for the app or for a migration. For the app it writes or extends one permanent prove-<app> skill with a section per surface (web, API, MCP, CLI), and a new surface adds a section, not a new skill. For a migration (Python to Rust, Next.js to React Router) it writes a temporary prove-<migration> skill that runs old and new side by side, then hands its cases to prove-<app> as snapshots when the old system is deleted. Each change gets up to two checks (does the new part work, do the old flows it touched still work), each against an answer key the builder did not write, such as an old system, a snapshot, a test suite or the user's spec. Use for /create-prove-it, "set up verification", "make a verify skill for this repo", "I'm adding an MCP server" or any new surface, "verify this migration", or "the agent keeps saying done without testing".
+description: Generate a project-local verification skill that an agent runs at the end of a change, before it says done. It asks first whether the skill is for the app or for a migration. For the app it writes or extends one permanent prove-<app> skill with a section per surface (web, API, MCP, CLI), and a new surface adds a section, not a new skill. For a migration (Python to Rust, Next.js to React Router) it writes a temporary prove-<migration> skill that runs old and new side by side, then hands its cases to prove-<app> as snapshots when the old system is deleted. It checks what the change touches (the new flows it adds and the existing flows it touched), each against an answer key the builder did not write, such as an old system, a snapshot, a test suite or the user's spec. Use for /create-prove-it, "set up verification", "make a verify skill for this repo", "I'm adding an MCP server" or any new surface, "verify this migration", or "the agent keeps saying done without testing".
 ---
 
 # Create Prove It
@@ -24,23 +24,25 @@ Don't skip step 6. A verification skill nobody has run is a guess.
 
 Every check has three parts: a **surface** (where a real user or program meets the change), an **answer key** (what right looks like, written by someone other than the agent that made the change) and a **comparison** (does what happened match the answer key).
 
-## The two checks
+## What the change touches
 
-Every change gets up to two checks, and the generated skill picks them from the diff:
+The generated skill checks what the change touches: every flow the change touches, each against the answer key that fits it. It works out those flows from the diff, and each is one of two kinds:
 
-- **Check 1: does the new part work?** Only when the change adds something new. If the new part copies something that exists (an MCP server that must behave like the web app), the answer key is parity with that thing: the same action through both, then compare the data. Otherwise the answer key is the user's spec. If the same change edits both the new part and the thing it copies, use the spec AND parity, because both can be wrong the same way and parity still passes.
-- **Check 2: does the old stuff still work?** Only on the old flows whose code the diff touched, directly or through shared code (schema, auth, nav, a shared component or function). The answer key is the app before the change: a snapshot, or the old version run beside the new one. A change made only of new files gets a quick smoke test instead: the app starts and its main flow works.
+- **A new flow**: the change adds it. If it copies something that exists (an MCP server that must behave like the web app), the answer key is parity with that thing: the same action through both, then compare the data. Otherwise the answer key is the user's spec. If the same change edits both the new flow and the thing it copies, use the spec AND parity, because both can be wrong the same way and parity still passes.
+- **An existing flow** the change touched, directly or through shared code (schema, auth, nav, a shared component or function). The answer key is the app before the change: a snapshot, or the old version run beside the new one.
+
+A change made only of new files still gets a quick smoke test of the existing app: it starts and its main flow works.
 
 Never "check the whole app". The diff decides what gets driven.
 
-**You never write the feature spec.** Specs come from the user's normal planning. The generated skill finds the spec after the build (the PR or issue body, a spec file in the diff, a path the user passes). If there is none, it asks. If the user has none, check 1 goes on the receipt as "no answer key", the weakest rung.
+**You never write the feature spec.** Specs come from the user's normal planning. The generated skill finds the spec after the build (the PR or issue body, a spec file in the diff, a path the user passes). If there is none, it asks. If the user has none, that new flow goes on the receipt as "no answer key", the weakest rung.
 
 ## 0. The app, or a migration?
 
 Ask this first, before anything else: "Is this for the app, or for a migration?" Give the rule with the question: **if the old thing is deleted at the end, it is a migration. If the old thing stays, it is the app.**
 
 - **The app** gets one permanent skill, `prove-<app>`, with one section per surface (web, API, MCP, CLI). If one already exists (a `prove-*` folder with the `prove-it:` marker), you extend it. "I'm adding an MCP server" is the app: add an MCP section to the existing skill, never a second skill. A new surface that copies another (the MCP server copies the app) names that surface as its parity answer key.
-- **A migration** (Python API to Rust, Next.js to React Router, Zig to Rust) gets a temporary skill, `prove-<migration>`, such as `prove-rust-migration`. Its answer key is the old system: run old and new side by side on the same inputs and compare. It runs check 2 only, on everything the migration covers. It ends with an end step: move its cases into `prove-<app>` as snapshots, then delete itself.
+- **A migration** (Python API to Rust, Next.js to React Router, Zig to Rust) gets a temporary skill, `prove-<migration>`, such as `prove-rust-migration`. Its answer key is the old system: run old and new side by side on the same inputs and compare. Everything the migration covers is what the change touches, and the old system is its answer key. It ends with an end step: move its cases into `prove-<app>` as snapshots, then delete itself.
 
 A Kitty image protocol added to Ghostty is the app, not a migration: Kitty stays, so the parity check can stay too.
 
@@ -88,10 +90,10 @@ A check with no answer key only proves the agent agrees with itself. Answer keys
 | 4 | A spec: flows and acceptance criteria written before the code | The user's spec, found in the PR, the issue or the diff at run time |
 | 5 | Nothing: the checking agent decides what right means | The weakest. Flag it |
 
-Name them per surface and per check:
+Name them per surface and per flow kind:
 
-- **Check 1, per surface.** Does this surface copy another? Then its answer key is parity with that one (rung 1). For an MCP server that copies the app: reading a record through both gives the same fields (read parity), bad input gets the same refusal (error parity), and create, edit and delete through MCP leave the same stored state as doing it in the app (lifecycle round trip). Otherwise check 1 uses the spec the skill finds at run time (rung 4).
-- **Check 2, per surface.** The app before the change. Say how: snapshots already in `.prove-it/snapshots/`, snapshots you take now from main for the main flows, or the base commit run in a worktree under `/tmp` on a second port.
+- **New flows, per surface.** Does this surface copy another? Then its answer key is parity with that one (rung 1). For an MCP server that copies the app: reading a record through both gives the same fields (read parity), bad input gets the same refusal (error parity), and create, edit and delete through MCP leave the same stored state as doing it in the app (lifecycle round trip). Otherwise a new flow uses the spec the skill finds at run time (rung 4).
+- **Existing flows, per surface.** The app before the change. Say how: snapshots already in `.prove-it/snapshots/`, snapshots you take now from main for the main flows, or the base commit run in a worktree under `/tmp` on a second port.
 - **For a migration**, the old system is the answer key (rung 1), plus an independent test suite if one exists (rung 3). Agree with the user on the inputs (recorded traffic, a fixture set, the old system's own test inputs) and on the list of differences that are allowed (ids, timestamps, a bug the new system fixes on purpose). Anything off that list is BROKEN.
 - **Budgets are answer keys too.** A number the user sets (a layout shift score, a load time, an accessibility score, zero console errors) gives a clear pass or fail with no judgment. Name one per surface where it fits.
 - **Say who wrote it.** A human, the old system, a snapshot taken from a version the user trusts, or a spec agreed before the code. Never the agent that will make future changes: it would grade its own work.
@@ -128,10 +130,10 @@ Then ask the user to pick, as a multi-select question with the recommended combo
 
 **What goes in it.** Follow [references/skill-template.md](references/skill-template.md): the permanent template for the app, the temporary one for a migration. Every section must be filled from what you actually saw in steps 1 to 4. The parts that matter most:
 
-- **Scope**: how to work out the diff (the base branch, the exact git commands) and a map from the repo's folders to the surfaces and flows they reach. Mark shared code (schema, auth, nav, shared components and functions) and what it reaches, since that decides check 2. A migration's Scope is everything it covers, not the diff.
+- **Scope**: how to work out the diff (the base branch, the exact git commands) and a map from the repo's folders to the surfaces and flows they reach. Mark shared code (schema, auth, nav, shared components and functions) and what it reaches, since that decides which existing flows the change touched. A migration's Scope is everything it covers, not the diff.
 - **Description**: write it so an agent runs the skill on its own, without being asked. Name the surfaces and the folders it covers, and say "Use on your own after any change to <those>, before saying it is done." A skill an agent has to be reminded of is only half a verifier.
-- **Sort the change** (permanent only): the first step after Scope. A short checklist that sorts each changed behaviour (new or old, copies something or not, did the change also edit the thing it copies) and picks check 1, check 2 and their answer keys. It is the flow chart in the README, as text.
-- **Find the spec** (permanent only): where to look for check 1's spec, and what to do when there is none.
+- **Sort the change** (permanent only): the first step after Scope. A short checklist that sorts each flow the change touches (new or existing, copies something or not, did the change also edit the thing it copies) and picks its answer key. It is the flow chart in the README, as text.
+- **Find the spec** (permanent only): where to look for a new flow's spec, and what to do when there is none.
 - **One section per surface**: how to drive it, what it copies (its parity answer key, or "nothing"), what done looks like there, and how a check there could fool you.
 - **Check in a fresh agent**: the agent that made the change works out the scope and sorts it, then, if it can start a sub-agent, hands the proof to a fresh one with only the flows, the surfaces and the answer keys. Not its plan or its reasoning: a checker that knows what was meant sees what it expects. If it can't start one, it runs the proof itself and marks the receipt "not independent".
 - **If it is BROKEN**: the findings (failing steps, the answer key each was compared with, the evidence) go back to the agent that made the change. It fixes the app, never the answer key or the check, and the check runs again on the same flows. Cap it at 3 rounds, then report what is still broken.
@@ -141,7 +143,7 @@ Then ask the user to pick, as a multi-select question with the recommended combo
 - **Deploy check** (only if the user ships by deploying): wait until the new build is actually serving, then drive the public entry point with no insider shortcuts, and label each receipt line with the environment it came from.
 - **Try to break it**: the probes worth running on this app (empty input, doing it twice, stale state, wrong method, bad id), plus a cold start (empty data, no optional secrets) and one sibling flow that should behave the same way.
 - **Evidence, receipt, clean up and gotchas**: as in the template.
-- **End step** (temporary only): when the old system is about to be deleted, save each case's old-system output as a snapshot, add those to `prove-<app>` as check 2 answer keys, prove them green there, then delete the temporary skill with the user's OK.
+- **End step** (temporary only): when the old system is about to be deleted, save each case's old-system output as a snapshot, add those to `prove-<app>` as answer keys for existing flows, prove them green there, then delete the temporary skill with the user's OK.
 
 **Make the checks hard to fool.** When Prove It was tested, `/audit-prove-it` planted 7 bugs in a sample app. The agents doing the checking caught 5, but the generated scripts caught only 1. The rules below close the gaps it found:
 
