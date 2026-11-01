@@ -18,7 +18,8 @@ Works with Claude Code, Codex and any agent that reads `SKILL.md` files. Free an
 <summary><strong>Claude Code</strong></summary>
 
 ```text
-/plugin install prove-it --marketplace ray-amjad/skills
+/plugin marketplace add ray-amjad/skills
+/plugin install ray-amjad-skills@ray-amjad
 ```
 
 </details>
@@ -28,7 +29,7 @@ Works with Claude Code, Codex and any agent that reads `SKILL.md` files. Free an
 
 ```bash
 codex plugin marketplace add ray-amjad/skills
-codex plugin add prove-it@ray-amjad
+codex plugin add ray-amjad-skills@ray-amjad
 ```
 
 </details>
