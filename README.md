@@ -8,6 +8,8 @@ Prove It gives your repo its own verification skill: one that launches your real
 
 Works with Claude Code, Codex and any agent that reads `SKILL.md` files. Free and MIT licensed.
 
+![How Prove It works: /create-prove-it sets up /prove-<app> once; /prove-<app> runs on its own after every change and writes a receipt; /maintain-prove-it learns from the receipts and fixes the skill; /audit-prove-it plants bugs to test it. A BROKEN verdict goes back to the builder, which fixes the app, never the answer key](assets/prove-it-loop.png)
+
 **Learn it in 7 days.** The free email course teaches one idea a day, using real repos and the mistakes agents actually make. You'll also hear about new skills when they land.
 
 **[Get the free 7-day course](https://www.agenticcoding.school)** <!-- TODO: switch to the course page URL once it is live -->
@@ -54,6 +56,8 @@ Then, in the repo you want to verify:
 ## How a check works
 
 A check has three parts. The **surface** is where a real user or program meets the change: a page, an API, a CLI, a database. The **answer key** says what right looks like, and the agent that made the change did not write it. The **comparison** asks whether what happened matches the answer key.
+
+![The three parts of a check: 1, the surface where it is met; 2, the answer key, what right looks like, not written by the agent; 3, the comparison, does it match. Together they give a verdict the agent can't argue with: PROVED, BROKEN or BLOCKED, plus what it couldn't prove](assets/verifier-parts.png)
 
 Answer keys form a ladder, best first:
 
@@ -113,6 +117,8 @@ Coding agents fail in the same few ways. Each skill fixes one.
 | Email capture | 5: nothing | Reminders that never send | Real delivery | A local mail catcher | No: needs `MAIL_API_KEY` |
 
 You pick the methods. It writes the skill using your repo's real commands and selectors, then runs it once, end to end, and shows you the receipt. The proof runs in a fresh sub-agent that sees the flows and answer keys but not the builder's reasoning. A BROKEN verdict goes back to the builder to fix, then the check runs again, up to 3 rounds.
+
+![A prove run after adding a mic picker: the agent runs /prove-recorder on its own, a fresh checker sorts the change into check 1 against the spec and check 2 against main, and the report lists PROVED for macOS and Linux, Couldn't prove: Windows, the numbers for each check and the receipt](assets/prove-run.png)
 
 Adding a surface? Tell it "I'm adding an MCP server". It adds an MCP section to your existing `prove-<app>`, with parity against the app as its answer key (the same action through both should leave the same data). Migrating? Tell it "verify this migration" and it writes a temporary skill instead.
 
