@@ -36,13 +36,13 @@ If there are no receipts, say so. Then the only inputs are reported bugs (step 4
 
 ## 3. For a temporary skill, check whether the migration is done
 
-Look at the evidence, not the plan: is the old system's code removed or about to be (a PR that deletes it, a deprecation commit), is all traffic on the new system (routing config, shadow mode off, the old service scaled to zero), or are all areas in the Scope table marked moved? If yes, suggest the end step to the user: save the cases as snapshots, add them to `prove-<app>`, prove them there, then delete the temporary skill. Don't run it without their OK. If the old system is already gone and the end step never ran, say so plainly: the cases can no longer be recorded from it, so the snapshots must come from the last receipts that ran it, or the new system as it is now, marked as the weaker key.
+Look at the evidence, not the plan. When every area in the Scope table is moved and the last run is green, suggest the end step now, before the PR that deletes the old system: the snapshots must be recorded while the old system still runs. Also suggest it if the old system's code is removed or about to be, or all traffic is on the new system. The end step is: save the cases as snapshots, add them to `prove-<app>`, prove them there, then delete the temporary skill. Don't run it without their OK. If the old system is already gone and the end step never ran, say so plainly: the cases can no longer be recorded from it, so the snapshots must come from the last receipts that ran it, or the new system as it is now, marked as the weaker key.
 
 If it isn't done, update the Scope table's Moved column from the commits since the skill last changed.
 
 ## 4. Collect bugs that slipped past
 
-If the user hasn't already said, ask whether anyone reported a bug that prove should have caught. For each one, find the receipt of the run that said PROVED on that change, and work out why it passed: the flow wasn't in scope, the step didn't look at the right thing, or the seed data hid it.
+If the user hasn't already said, ask in your first message, before the other work, whether anyone reported a bug that prove should have caught. For each one, find the receipt of the run that said PROVED on that change, and work out why it passed: the flow wasn't in scope, the step didn't look at the right thing, or the seed data hid it.
 
 ## 5. Sort what you found
 

@@ -89,7 +89,7 @@ A number the user sets, measured on the running app: layout shift and the other 
 
 - **Catches:** the page that jumps as it loads, the slow query a change added, the button with no label, the warning nobody reads. Things that work but are worse.
 - **Misses:** whether the feature does the right thing. Pair it with a drive, never use it alone.
-- **Cost:** low to medium. Pick a tool the agent can run every time (Chrome DevTools MCP, Lighthouse CLI, axe, `curl -w`), and measure more than once when the number is noisy.
+- **Cost:** low to medium. Pick a tool the agent can run every time (Chrome DevTools MCP, Lighthouse CLI, axe, `curl -w`), and measure more than once when the number is noisy. With no DevTools MCP, measure layout shift in Playwright with a `PerformanceObserver` on `layout-shift` entries.
 - **Answer key:** the budget itself, set by the user, never by the checker. Pass or fail is a number, so no judgment is needed.
 
 ## Library boundary

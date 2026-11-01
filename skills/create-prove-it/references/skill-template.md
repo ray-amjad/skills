@@ -52,7 +52,9 @@ Prove checks what the change touches. Answer these for each flow Scope reached, 
 4. **Existing, and did the change touch its code**, directly or through shared code (schema, auth, nav, a shared component or function)? Answer key is the app before the change.
 5. **Existing, and untouched?** Not something the change touches: skip it. If the whole change is new files, also run the smoke test once: the app starts and `<main flow>` works.
 
-Never check the whole app.
+A change to code used by several actions (a viewset's `get_queryset`, a serializer, a shared query) runs each of those actions with the new input, not just the one the feature is for.
+
+Never check the whole app. A rule that says "always run X" (privacy, budgets) applies only when the change reaches X's surface.
 
 ## Find the spec
 
@@ -60,9 +62,9 @@ A new flow without parity needs the user's spec. Look, in order:
 
 1. The PR body (`gh pr view --json body,closingIssuesReferences`) and any issue it closes.
 2. A spec or plan file in the diff (`<e.g. docs/plans/*.md, or wherever this repo keeps them>`).
-3. A path the user passed.
+3. A spec path or spec text the user passed. The request that asked for the change ("add `?q=` to tags") is not a spec: it says what was built, not what right looks like.
 
-If you find none, ask the user for it. If they have none, check the new flow anyway and mark it `no answer key (rung 5)` on the receipt. Never write the spec yourself, and never edit the one you found.
+If you find none, ask the user for it. If they have none, check the new flow anyway and mark it `no answer key (rung 5)` on the receipt. The verdict is then UNPROVEN, not PROVED. Never write the spec yourself, and never edit the one you found.
 
 ## Answer keys
 
@@ -77,11 +79,13 @@ Ladder, best first: 1 an old system that does the same job, 2 a snapshot, 3 an i
 
 - **Never edit an answer key to make a check pass.** If the app and the answer key disagree, the verdict is BROKEN; only the user changes an answer key.
 - **Compare against the answer key, not your idea of right.** Where a flow has none, say so on the receipt.
+- **A spec line that says an area is "not changed"** makes that area an existing flow, checked against the base commit. Any difference is BROKEN until the user approves it.
+- **There is no "PROVED with a flag".** A question for the user is BROKEN until they answer it. A parity difference is BROKEN unless it is listed under Known and deliberate.
 - **A snapshot shows "same as before", not "correct".** If the change is meant to alter a snapshot, the step is BROKEN until the user approves a new one.
 
 ## Check in a fresh agent
 
-The agent that made the change knows what it meant to build, so it tends to see what it expects. Do Scope, Sort and Find the spec yourself, then, if you can start a sub-agent (the Agent tool in Claude Code, a subagent in Codex), hand the proof to a fresh one. Give it only the flows, the surfaces, whether each is new or existing, the answer keys, and the name of this skill. Not your plan, your reasoning or what you think the change does. Ask for PROVED, BROKEN or BLOCKED and the receipt path.
+The agent that made the change knows what it meant to build, so it tends to see what it expects. Do Scope, Sort and Find the spec yourself, then, if you can start a sub-agent (the Agent tool in Claude Code, a subagent in Codex), hand the proof to a fresh one. Give it only the flows, the surfaces, whether each is new or existing, the answer keys, and the name of this skill. Not your plan, your reasoning or what you think the change does. Ask for PROVED, BROKEN, BLOCKED or UNPROVEN and the receipt path.
 
 If you can't start a sub-agent, run the proof yourself and write `Checker: same agent (not independent)` on the receipt.
 
@@ -151,7 +155,7 @@ Save everything to `.prove-it/runs/<UTC timestamp>-<slug>/`. Write `receipt.md` 
 
 ```
 # Receipt: <what was proved>
-Verdict: PROVED | BROKEN | BLOCKED
+Verdict: PROVED | BROKEN | BLOCKED | UNPROVEN
 Checker: fresh sub-agent | same agent (not independent)
 Scope: diff <base sha>..<head sha> (+ uncommitted: yes|no) | flow "<name>"
 Changed files: <list, or "n/a" for a flow>
@@ -174,6 +178,8 @@ Instance: <url or binary, version or commit, port>
 
 Fill "Retries and fixes" honestly, even on a PROVED run. A step that failed for a reason unrelated to the change is how the next agent learns this skill has drifted.
 
+UNPROVEN means every step passed but at least one new flow had no answer key (rung 5). It leads Couldn't prove.
+
 PROVED only if every step passed, every step was compared with its answer key, and every promised behaviour has a step you ran and watched. Reading code doesn't count. Ambiguous output is BROKEN with the raw capture attached.
 
 - **A step counts only if its evidence shows a change you can name.** A step that changes state needs evidence from before and after (screenshot, page text, count, output). If they're identical, the step did nothing: BROKEN.
@@ -186,7 +192,7 @@ PROVED only if every step passed, every step was compared with its answer key, a
 End with a short message, not just a path. The user may not be able to open your files.
 
 ```
-<PROVED | BROKEN | BLOCKED>: <what was proved, one line>
+<PROVED | BROKEN | BLOCKED | UNPROVEN>: <what was proved, one line>
 Couldn't prove: <each item, why, and the unlock or the steps for a human; "nothing" only if every promised behaviour has a passing step>
 Evidence: <the one screenshot that shows the feature (attach or embed it if your tool can), the key numbers (budget results, counts, status codes), the key output inline>
 Answer keys: <each flow and what it was checked against, e.g. new picker against the spec, recording page against main; flag any that were "nothing">
@@ -197,7 +203,7 @@ Put "Couldn't prove" before the evidence, every time, even on PROVED. A pass tha
 
 ## If it is BROKEN
 
-Send the findings back to the agent that made the change: the failing steps, the answer key each was compared with, and the evidence. It fixes the app, never the answer key or the check. Then run the proof again on the same flows, in a fresh sub-agent again if you can. Stop after 3 rounds and report what is still BROKEN to the user, with the receipt from every round. BLOCKED is not a fix-loop case: report it.
+Send the findings back to the agent that made the change: the failing steps, the answer key each was compared with, and the evidence. It fixes the app, never the answer key or the check. It may add cases and fix this skill's scripts when they are wrong, and says so in its reply. Then run the proof again on the same flows, in a fresh sub-agent again if you can. Stop after 3 rounds and report what is still BROKEN to the user, with the receipt from every round. BLOCKED is not a fix-loop case: report it.
 
 ## Limits
 

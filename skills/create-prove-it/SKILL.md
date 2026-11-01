@@ -46,6 +46,8 @@ Ask this first, before anything else: "Is this for the app, or for a migration?"
 
 A Kitty image protocol added to Ghostty is the app, not a migration: Kitty stays, so the parity check can stay too.
 
+If the request already answers it ("I'm adding an MCP server" to an app that stays), state your pick in one line and continue.
+
 If nobody can answer (a headless run), infer it from the repo and the request, and say in the report which you picked and why.
 
 ## 1. Map the surfaces
@@ -118,7 +120,7 @@ Rules for the table:
 
 Under the table, recommend a combination in two or three sentences: usually the primary surface driven end to end, plus one cheap check that covers what the primary misses (a stored-state check under a UI flow, a log scan for swallowed errors). For a migration, recommend how to compare old and new: shadow traffic, byte-for-byte output, or stored state after the same inputs.
 
-Offer measurable budgets in the table where they fit (see the method in methods.md). Then go past the catalogue: ask what the user cares about for this app (speed, accessibility, SEO, design system rules, cost per request, a flow that must never break) and propose a measurable check for each goal, even one that methods.md doesn't list. The best checks often come from the user's goals, not from the code.
+Offer measurable budgets in the table where they fit (see the method in methods.md). For a web UI, always offer these 4 as separate rows, each with a proposed number: layout shift (CLS), load time, accessibility score and console errors. Then go past the catalogue: ask what the user cares about for this app (speed, accessibility, SEO, design system rules, cost per request, a flow that must never break) and propose a measurable check for each goal, even one that methods.md doesn't list. The best checks often come from the user's goals, not from the code.
 
 Then ask the user to pick, as a multi-select question with the recommended combo first. Use your agent's question tool if it has one (AskUserQuestion in Claude Code), otherwise ask in chat and wait. If nobody can answer, go with the recommendation and say clearly in the final report that you chose for them.
 
@@ -145,15 +147,18 @@ Then ask the user to pick, as a multi-select question with the recommended combo
 - **Evidence, receipt, clean up and gotchas**: as in the template.
 - **End step** (temporary only): when the old system is about to be deleted, save each case's old-system output as a snapshot, add those to `prove-<app>` as answer keys for existing flows, prove them green there, then delete the temporary skill with the user's OK.
 
-**Make the checks hard to fool.** When Prove It was tested, `/audit-prove-it` planted 7 bugs in a sample app. The agents doing the checking caught 5, but the generated scripts caught only 1. The rules below close the gaps it found:
+**Make the checks hard to fool.** When Prove It was tested, `/audit-prove-it` planted 7 bugs in a sample app. The agents doing the checking caught 5, but the generated scripts caught only 1. A second test on a real app got the same result: the scripts caught 1 of 6. The rules below close the gaps it found:
 
 - **Seed more than one record**, some in each state (two done, two open). With one row, "counts only the first", "ticks every row" and an off-by-one counter all pass.
+- **Cover every branch of shared code.** For each shared function in the Scope map, seed and script every branch it takes: each searchable field, each sort order, each filter value. Run the scripted checks on the base commit and on the change, and diff the results.
 - **Check every action in reverse too**: untick, undo, remove the thing you added.
 - **Let stand-ins fail.** A fake email or payment provider that always says yes can't show you the error path. Give it a switch that makes it fail, and check the app reports the failure instead of claiming success.
 - **Assert everything the answer key and "Done looks like" name for that surface**, not just the field the change is about.
 - **A script pass is not the verdict.** Scripted checks report "checks passed"; only the agent, having looked at the evidence, writes PROVED.
 
-**Scripts.** Put repeatable mechanics in `scripts/` (start, health, stop, and a scripted check per method where possible; for a migration, a compare script that runs one case through old and new and diffs the results). Make each one executable and show its exact invocation in SKILL.md. A scripted check is worth a lot here: `/audit-prove-it` can run it blind, and the next agent can rerun it in seconds.
+**Scripts.** Put repeatable mechanics in `scripts/` (start, health, stop, and a scripted check per method where possible; for a migration, a compare script that runs one case through old and new and diffs the results). Make each one executable and show its exact invocation in SKILL.md. A scripted check is worth a lot here: `/audit-prove-it` can run it blind, and the next agent can rerun it in seconds. Select elements by stable attributes (a form field `name`, `data-*`, role plus route), not by visible text, unless the text is what is under test. Renaming one button must not break a script.
+
+**Length.** Keep SKILL.md under about 250 lines, so a checker can read it in one pass. Put the detail of each surface in `references/<surface>.md` and keep a short section per surface in SKILL.md that links to it.
 
 **Evidence location.** Runs save to `.prove-it/runs/<UTC timestamp>-<slug>/` at the repo root. Add `.prove-it/runs/` and `.prove-it/audits/` to `.gitignore`. Snapshots are answer keys, so they live in `.prove-it/snapshots/` and get committed. Write evidence as it is produced, not at the end, so an interrupted run keeps what it proved. The receipt records what was proved, how the change was sorted, who checked it, the surfaces driven, each step's verdict, evidence and the answer key it was compared with, failed and retried steps, and the commands that finally worked. `/maintain-prove-it` reads these receipts later to improve the skill, so don't trim that detail.
 
@@ -165,7 +170,7 @@ Follow the generated skill exactly as written, as if you had never seen this rep
 - no process or port you started is still alive,
 - the repo has no new untracked files except `.prove-it/` and the skill itself.
 
-Anything that fails is a bug in the skill. Fix it, run cleanup, run again. Keep going until a clean run passes. Then check Scope and Sort on a real diff: run them against the last commit that changed product code and confirm they name the flows, checks and answer keys you would have picked by hand.
+Anything that fails is a bug in the skill. Fix it, run cleanup, run again. Keep going until a clean run passes. For a migration, a clean run means the compare ran end to end and gave a verdict you trust. BROKEN is a valid result while the new system is not finished. Then check Scope and Sort on a real diff: run them against the last commit that changed product code and confirm they name the flows, checks and answer keys you would have picked by hand.
 
 Then check it runs on its own: give a fresh agent a small change to the main flow without mentioning the skill, and confirm it runs `prove-<app>` before it says done. If it doesn't, sharpen the description (name the folders and surfaces it covers) and try again. Say in the hand over whether it triggered.
 
