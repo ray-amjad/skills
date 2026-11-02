@@ -1,3 +1,5 @@
+![Ray Amjad's skills. Spec it, build it, prove it: /idea-to-spec turns a rough idea into a spec you decided, /task-lifecycle builds, reviews, verifies and ships it as a PR, /create-prove-it and /prove-<app> make your agent prove its work](assets/skills-banner.png)
+
 # Ray Amjad's skills
 
 **Agent skills for shipping real changes with a coding agent: spec it, build it, prove it.**
@@ -9,6 +11,8 @@ Works with Claude Code, Codex and any agent that reads `SKILL.md` files. Free an
 | [`/idea-to-spec`](./skills/idea-to-spec/SKILL.md) | Turns a rough idea into a short, evidence-backed spec: starting point, goals and non-goals, constraints, and proof. Every line is a decision you made or confirmed |
 | [`/task-lifecycle`](./skills/task-lifecycle/SKILL.md) | Ships a change as a reviewed and verified PR: one builder, independent review and fix rounds, then a verify step that drives the real app. Asks you before it merges |
 | [Prove It](#prove-it) (`/create-prove-it`, `/maintain-prove-it`, `/audit-prove-it`) | Gives your repo its own verification skill, keeps it current, and plants bugs to test it |
+
+![How they fit: /idea-to-spec outputs the spec, /task-lifecycle builds it into a reviewed PR, /prove-<app> drives the real app and checks it against the answer key; BROKEN goes back to the builder. The spec's Proof section is the answer key, and the builder fixes the app, never the key](assets/skills-chain.png)
 
 They chain: the spec's Proof section is the answer key, `/task-lifecycle` builds to it, and its verify step runs your repo's `/prove-<app>` when there is one.
 
