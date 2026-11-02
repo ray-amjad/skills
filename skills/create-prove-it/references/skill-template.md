@@ -2,6 +2,8 @@
 
 Two templates: the permanent `prove-<app>` (one per app, one section per surface) and the temporary `prove-<migration>` (one per migration, deleted at its end step). Replace everything in angle brackets with what you found. Delete sections for methods the user didn't pick. Nothing in angle brackets may survive into the final file.
 
+**Core blocks: copy them word for word.** These sections hold the verdict and report rules, and an agent that summarises them loses the rules: Sort the change, Find the spec, Answer keys (the bullets under the table), Check in a fresh agent, Evidence and receipt, Report to the user, If it is BROKEN. Fill only their angle-bracket parts. To keep SKILL.md short, move surface detail into `references/<surface>.md`, never shorten a core block. In an eval, a generated skill that summarised them dropped "is not a spec", UNPROVEN and the whole report block, and it scored lower than the longer old version.
+
 ## Permanent: prove-<app>
 
 ````markdown
@@ -79,7 +81,7 @@ Ladder, best first: 1 an old system that does the same job, 2 a snapshot, 3 an i
 
 - **Never edit an answer key to make a check pass.** If the app and the answer key disagree, the verdict is BROKEN; only the user changes an answer key.
 - **Compare against the answer key, not your idea of right.** Where a flow has none, say so on the receipt.
-- **A spec line that says an area is "not changed"** makes that area an existing flow, checked against the base commit. Any difference is BROKEN until the user approves it.
+- **A spec line that says an area is "not changed"** makes that area an existing flow. Run the same input on the base commit and on the change, and compare the two outputs with each other, not with the spec. Any difference is BROKEN until the user approves it, even when the spec seems to allow it. Base `[3, 4, 6]` and change `[]` is BROKEN, not noise.
 - **There is no "PROVED with a flag".** A question for the user is BROKEN until they answer it. A parity difference is BROKEN unless it is listed under Known and deliberate.
 - **A snapshot shows "same as before", not "correct".** If the change is meant to alter a snapshot, the step is BROKEN until the user approves a new one.
 
@@ -177,6 +179,8 @@ Instance: <url or binary, version or commit, port>
 ```
 
 Fill "Retries and fixes" honestly, even on a PROVED run. A step that failed for a reason unrelated to the change is how the next agent learns this skill has drifted.
+
+An existing flow whose output differs from the base commit makes the verdict BROKEN, even when the new feature works. Report it as a failing step, never as a side note under a passing verdict.
 
 UNPROVEN means every step passed but at least one new flow had no answer key (rung 5). It leads Couldn't prove.
 

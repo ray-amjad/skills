@@ -158,7 +158,7 @@ Then ask the user to pick, as a multi-select question with the recommended combo
 
 **Scripts.** Put repeatable mechanics in `scripts/` (start, health, stop, and a scripted check per method where possible; for a migration, a compare script that runs one case through old and new and diffs the results). Make each one executable and show its exact invocation in SKILL.md. A scripted check is worth a lot here: `/audit-prove-it` can run it blind, and the next agent can rerun it in seconds. Select elements by stable attributes (a form field `name`, `data-*`, role plus route), not by visible text, unless the text is what is under test. Renaming one button must not break a script.
 
-**Length.** Keep SKILL.md under about 250 lines, so a checker can read it in one pass. Put the detail of each surface in `references/<surface>.md` and keep a short section per surface in SKILL.md that links to it.
+**Length.** Keep SKILL.md under about 250 lines, so a checker can read it in one pass. Put the detail of each surface in `references/<surface>.md` and keep a short section per surface in SKILL.md that links to it. Never make room by shortening a core block: the template lists them, and you copy them word for word.
 
 **Evidence location.** Runs save to `.prove-it/runs/<UTC timestamp>-<slug>/` at the repo root. Add `.prove-it/runs/` and `.prove-it/audits/` to `.gitignore`. Snapshots are answer keys, so they live in `.prove-it/snapshots/` and get committed. Write evidence as it is produced, not at the end, so an interrupted run keeps what it proved. The receipt records what was proved, how the change was sorted, who checked it, the surfaces driven, each step's verdict, evidence and the answer key it was compared with, failed and retried steps, and the commands that finally worked. `/maintain-prove-it` reads these receipts later to improve the skill, so don't trim that detail.
 
@@ -172,6 +172,16 @@ Follow the generated skill exactly as written, as if you had never seen this rep
 
 Anything that fails is a bug in the skill. Fix it, run cleanup, run again. Keep going until a clean run passes. For a migration, a clean run means the compare ran end to end and gave a verdict you trust. BROKEN is a valid result while the new system is not finished. Then check Scope and Sort on a real diff: run them against the last commit that changed product code and confirm they name the flows, checks and answer keys you would have picked by hand.
 
+Then check the core blocks survived. Each of these must be in the generated SKILL.md; put back any that is missing, word for word from the template:
+
+```bash
+for rule in "is not a spec" "UNPROVEN" "PROVED with a flag" "not changed" "What the change touches" "Report to the user" "Couldn't prove" "Check in a fresh agent" "If it is BROKEN"; do
+  grep -qF "$rule" <skill folder>/SKILL.md || echo "missing: $rule"
+done
+```
+
+A migration skill has no Find the spec or Sort the change, so it skips "is not a spec", "not changed" and "What the change touches".
+
 Then check it runs on its own: give a fresh agent a small change to the main flow without mentioning the skill, and confirm it runs `prove-<app>` before it says done. If it doesn't, sharpen the description (name the folders and surfaces it covers) and try again. Say in the hand over whether it triggered.
 
 If the new surface isn't built yet, prove the side that exists (the surface it copies, the snapshots) and list the new section's flows as pending in the receipt.
@@ -180,7 +190,7 @@ If you had to prove it in a stand-in (a container instead of the user's real set
 
 ## 7. Hand over
 
-Report, briefly:
+Start with one line: the verdict of the proving run (PROVED, BROKEN, BLOCKED or UNPROVEN) and what it proved. Then report, briefly:
 
 - which kind of skill you made or extended, and why,
 - the surfaces found and which ones are unreachable, with the unlock for each,
