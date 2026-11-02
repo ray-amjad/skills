@@ -1,23 +1,16 @@
-![Prove It, beta: skills that make your coding agent prove its work. /create-prove-it builds a verifier for your app, /prove-<app> runs on its own after every change, /maintain-prove-it and /audit-prove-it keep it honest](assets/banner.png)
+# Ray Amjad's skills
 
-# Prove It
-
-**Skills that make your coding agent prove its work.**
-
-> [!NOTE]
-> **Beta.** Prove It is new and still changing. The skills work, but expect rough edges and breaking changes between versions. If something goes wrong or reads unclear, [open an issue](https://github.com/ray-amjad/skills/issues).
-
-Your agent says "done". The tests pass. The code looks right. Then you open the app and the button does nothing.
-
-Prove It gives your repo its own verification skill: one that launches your real app, drives it the way a user does, saves the evidence and cleans up after itself. Then it keeps that skill honest, and tries to fool it.
+**Agent skills for shipping real changes with a coding agent: spec it, build it, prove it.**
 
 Works with Claude Code, Codex and any agent that reads `SKILL.md` files. Free and MIT licensed.
 
-![How Prove It works: /create-prove-it sets up /prove-<app> once; /prove-<app> runs on its own after every change and writes a receipt; /maintain-prove-it learns from the receipts and fixes the skill; /audit-prove-it plants bugs to test it. A BROKEN verdict goes back to the builder, which fixes the app, never the answer key](assets/prove-it-loop.png)
+| Skill | What it does |
+|---|---|
+| [`/idea-to-spec`](./skills/idea-to-spec/SKILL.md) | Turns a rough idea into a short, evidence-backed spec: starting point, goals and non-goals, constraints, and proof. Every line is a decision you made or confirmed |
+| [`/task-lifecycle`](./skills/task-lifecycle/SKILL.md) | Ships a change as a reviewed and verified PR: one builder, independent review and fix rounds, then a verify step that drives the real app. Asks you before it merges |
+| [Prove It](#prove-it) (`/create-prove-it`, `/maintain-prove-it`, `/audit-prove-it`) | Gives your repo its own verification skill, keeps it current, and plants bugs to test it |
 
-**Learn it in 7 days.** The free email course teaches one idea a day, using real repos and the mistakes agents actually make. You'll also hear about new skills when they land.
-
-**[Get the free 7-day course](https://www.agenticcoding.school)** <!-- TODO: switch to the course page URL once it is live -->
+They chain: the spec's Proof section is the answer key, `/task-lifecycle` builds to it, and its verify step runs your repo's `/prove-<app>` when there is one.
 
 ## Install
 
@@ -52,13 +45,32 @@ Or copy the folders you want from `skills/` into `~/.claude/skills/` (Claude Cod
 
 </details>
 
-Then, in the repo you want to verify:
+## Prove It
+
+![Prove It, beta: skills that make your coding agent prove its work. /create-prove-it builds a verifier for your app, /prove-<app> runs on its own after every change, /maintain-prove-it and /audit-prove-it keep it honest](assets/banner.png)
+
+**Skills that make your coding agent prove its work.**
+
+> [!NOTE]
+> **Beta.** Prove It is new and still changing. The skills work, but expect rough edges and breaking changes between versions. If something goes wrong or reads unclear, [open an issue](https://github.com/ray-amjad/skills/issues).
+
+Your agent says "done". The tests pass. The code looks right. Then you open the app and the button does nothing.
+
+Prove It gives your repo its own verification skill: one that launches your real app, drives it the way a user does, saves the evidence and cleans up after itself. Then it keeps that skill honest, and tries to fool it.
+
+![How Prove It works: /create-prove-it sets up /prove-<app> once; /prove-<app> runs on its own after every change and writes a receipt; /maintain-prove-it learns from the receipts and fixes the skill; /audit-prove-it plants bugs to test it. A BROKEN verdict goes back to the builder, which fixes the app, never the answer key](assets/prove-it-loop.png)
+
+**Learn it in 7 days.** The free email course teaches one idea a day, using real repos and the mistakes agents actually make. You'll also hear about new skills when they land.
+
+**[Get the free 7-day course](https://www.agenticcoding.school)** <!-- TODO: switch to the course page URL once it is live -->
+
+To start, in the repo you want to verify:
 
 ```text
 /create-prove-it
 ```
 
-## How a check works
+### How a check works
 
 A check has three parts. The **surface** is where a real user or program meets the change: a page, an API, a CLI, a database. The **answer key** says what right looks like, and the agent that made the change did not write it. The **comparison** asks whether what happened matches the answer key.
 
@@ -76,7 +88,7 @@ Prove It checks **what the change touches**: every flow the change touches, each
 
 Prove It never writes your spec either. It finds the one you already wrote, in the PR, the issue or the diff, or asks you for it.
 
-## 2 kinds of prove skill
+### 2 kinds of prove skill
 
 - **Permanent `/prove-<app>`**: lives in the repo for good and runs after every change. One section per surface (web, API, MCP, CLI). Adding a surface adds a section, not a skill.
 - **Temporary `/prove-<migration>`**: for one big migration, such as Python to Rust. Runs the old and new systems side by side and compares. Its end step moves its cases into `/prove-<app>` as snapshots, then deletes it.
@@ -104,11 +116,11 @@ flowchart TD
 | Python API to Rust | Temporary | The old Python API, with shadow traffic |
 | Next.js to React Router | Temporary | The old Next.js app |
 
-## Why it exists
+### Why it exists
 
 Coding agents fail in the same few ways. Each skill fixes one.
 
-### 1. "Done" means the code compiles
+#### 1. "Done" means the code compiles
 
 **The problem.** The agent reads its own diff, runs the tests and calls it done. Tests mock the parts that break. Nobody opened the app.
 
@@ -127,13 +139,13 @@ You pick the methods. It writes the skill using your repo's real commands and se
 
 Adding a surface? Tell it "I'm adding an MCP server". It adds an MCP section to your existing `prove-<app>`, with parity against the app as its answer key (the same action through both should leave the same data). Migrating? Tell it "verify this migration" and it writes a temporary skill instead.
 
-### 2. The verifier goes stale
+#### 2. The verifier goes stale
 
 **The problem.** You rename a button, add a page, change a port. The verification skill still describes last month's app, and the next agent trusts it.
 
 **The fix.** [`/maintain-prove-it`](./skills/maintain-prove-it/SKILL.md) reads the receipts from past prove runs: the steps that failed, the retries, the command that finally worked, the step that broke on a change that had nothing to do with it. Tell it about any bug that slipped past and it adds the check that would have caught it. When the app and the skill disagree, it works out which one is wrong. It fixes the skill, proves every fix live, and reports bugs in the app without touching your code. It never rewrites an answer key to match the app: that disagreement goes to you.
 
-### 3. The verifier says PROVED on a broken app
+#### 3. The verifier says PROVED on a broken app
 
 **The problem.** A check that can't fail is worse than no check, because it gives you confidence you haven't earned.
 
@@ -141,7 +153,7 @@ Adding a surface? Tell it "I'm adding an MCP server". It adds an MCP section to 
 
 In testing, the first audit of a generated verifier planted 7 bugs. The agents doing the checking caught 5, but the verifier's own scripts caught only 1, because every check ran against a single record. That finding now shapes how `/create-prove-it` writes checks.
 
-## The skills
+### The skills
 
 | Skill | What it does | When |
 |---|---|---|
@@ -149,7 +161,7 @@ In testing, the first audit of a generated verifier planted 7 bugs. The agents d
 | [`/maintain-prove-it`](./skills/maintain-prove-it/SKILL.md) | Learns from past prove runs and missed bugs, fixes the skill where it drifted, proposes answer keys where flows have none, and suggests a migration skill's end step once the old system is going | After prove has run a few times, or a bug slipped past |
 | [`/audit-prove-it`](./skills/audit-prove-it/SKILL.md) | Plants bugs in a change (in the new system only, for a migration), checks whether the verifier catches them, and adds misses to the answer keys with your OK | After creating it, then now and then |
 
-## What it adds to your repo
+### What it adds to your repo
 
 ```text
 your-repo/
@@ -164,6 +176,14 @@ your-repo/
     runs/<timestamp>-<slug>/       # receipts (what was proved, verdicts, retries), screenshots, logs (git-ignored)
     audits/<timestamp>/report.md   # git-ignored
 ```
+
+## idea-to-spec
+
+You give it a rough idea. It does the homework first (reads the code, probes the facts, never asks you something it can look up), drafts a spec and has a fresh agent attack it, then interviews you one decision at a time. It plays the whole spec back before it writes anything, and publishes it as a GitHub issue or a file.
+
+## task-lifecycle
+
+The default path from "build this" to a merged change. One builder writes the change on its own branch and records every judgement call in implementation notes. Independent reviewers read the diff, a fixer resolves what they confirm (up to two rounds), and a verify step drives every changed flow against the real app and a real non-production database. It stops and asks before merging, then checks the live site after deploy. It also runs on a change that already exists: "put this branch through the loop".
 
 ## License
 

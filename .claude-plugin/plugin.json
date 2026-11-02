@@ -1,15 +1,17 @@
 {
   "name": "ray-amjad-skills",
-  "version": "0.2.1",
-  "description": "Ray Amjad's agent skills. Starts with Prove It: generate, maintain and audit a verification skill that makes your coding agent prove its work.",
+  "version": "0.3.0",
+  "description": "Ray Amjad's agent skills: turn an idea into a spec (idea-to-spec), ship it as a reviewed and verified PR (task-lifecycle), and make your coding agent prove its work (Prove It).",
   "author": { "name": "Ray Amjad", "url": "https://www.agenticcoding.school" },
   "homepage": "https://www.agenticcoding.school",
   "repository": "https://github.com/ray-amjad/skills",
   "license": "MIT",
-  "keywords": ["verification", "testing", "evidence", "playwright", "skills"],
+  "keywords": ["spec", "workflow", "code-review", "verification", "testing", "evidence", "playwright", "skills"],
   "skills": [
     "./skills/create-prove-it",
     "./skills/maintain-prove-it",
-    "./skills/audit-prove-it"
+    "./skills/audit-prove-it",
+    "./skills/idea-to-spec",
+    "./skills/task-lifecycle"
   ]
 }
