@@ -6,7 +6,7 @@
     {
       "name": "ray-amjad-skills",
       "source": "./",
-      "description": "Ray Amjad's agent skills. Starts with Prove It: generate, maintain and audit a verification skill that makes your coding agent prove its work."
+      "description": "Ray Amjad's agent skills: turn an idea into a spec (idea-to-spec), ship it as a reviewed and verified PR (task-lifecycle), and make your coding agent prove its work (Prove It)."
     }
   ]
 }
