@@ -57,9 +57,8 @@ The checker reports **which of five outcomes** the flow hit:
   Fix it in this PR only when the user asks, or when it is a few lines in a file this diff already
   changes. That fix shares the one fix round below. Say which defects you filed and which you fixed.
 - **`ran_wrong`** (an error, wrong output, a 200 with no row): tell the user. Then send the verify evidence
-  **back to the builder** with SendMessage, have it commit and push, and **re-verify once** with a
-  fresh verifier. If the
-  flow still fails, stop and report it. **One round is the cap** (two in the already-built mode),
+  **back to the builder**, have it commit and push, and **re-verify once** with a fresh verifier. If
+  the flow still fails, stop and report it. **One round is the cap** (two in the already-built mode),
   because each cycle boots a server and drives a browser.
 - **`could_not_boot`** (missing credential, missing env, the database would not start): **do not
   fix-loop**, because no app change repairs a credential. Record it, attach the text evidence, say
