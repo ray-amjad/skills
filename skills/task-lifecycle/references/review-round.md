@@ -6,8 +6,8 @@ Bring the PR number, `$BASE`, the branch, and the repo path.
 ## Round budget
 
 A normal task-lifecycle run gets **at most two complete rounds**. A round that returns `CONFIRMED` or
-`[P1]` findings completes only after a fresh fixer resolves every finding it can, commits the fixes and
-pushes them to the PR branch. Record a finding the fixer cannot resolve as unresolved, and report it
+`[P1]` findings completes only after the builder resolves every finding it can, commits the fixes and
+pushes them to the PR branch. Record a finding the builder cannot resolve as unresolved, and report it
 at the end. Stop early when a review comes back clean.
 
 Go directly to verification after the round 2 fixes. **Never run a third broad or full-diff review in
@@ -49,14 +49,14 @@ for a thorough review ("review this properly") always gets both.
 ### Merge the findings
 
 - **Fix now:** a `CONFIRMED` (Claude) or `[P1]` (Codex) finding.
-- **Carry, do not fix:** `PLAUSIBLE`, `[P2]`. Report these once, in step 6. Do not send a fixer after
-  a maybe.
+- **Carry, do not fix:** `PLAUSIBLE`, `[P2]`. Report these once, in step 6. Do not send the builder
+  after a maybe.
 - **A finding that asks for NEW code must name the path to the state it handles.** That is a click, a
   route, an API call, or a guard that exists in the repo. With no concrete path, the finding is
-  **carried soft, not fixed**. Why: otherwise the fixer writes a branch no user enters, and verify can
+  **carried soft, not fixed**. Why: otherwise the builder writes a branch no user enters, and verify can
   never reach it. One grep or one question to the reviewer usually settles it.
 - **The two reviewers contradict each other:** do not pick a side. State what each is protecting, find
-  the axis on which both hold, and brief the fixer on that shape. Why: a fixer that satisfies one
+  the axis on which both hold, and brief the builder on that shape. Why: a fix that satisfies one
   reviewer brings back the other's finding in the next round.
 
 A defect that both reviewers flag is the higher-confidence one. Post the merged set to the PR, ending
@@ -70,10 +70,13 @@ gh pr comment <n> --body "$(cat findings.md)"
 If every reviewer you ran comes back clean, capture the fetched remote head. Then post
 `<!-- task-lifecycle-round:1 stage:complete head:<full-sha> -->` and go straight to verify.
 
-## Fix (a new fresh subagent, every round)
+## Fix (back to the same builder, every round)
 
-Brief a **new** subagent with only the findings and the repo path. It fixes exactly those findings,
-then commits and pushes to the same PR. Tell it:
+Send the findings to **the builder that wrote the change**, with SendMessage, every round. It already
+knows the design, so it fixes the finding and the cases right next to it, not only the line the
+reviewer pointed at. Dispatch a new agent only when the builder is gone (the run died, or this is a
+new session); brief it with the findings, the notes file and the branch, and it is the builder from
+then on. It fixes exactly those findings, then commits and pushes to the same PR. Tell it:
 
 - **Findings with one root cause get one design, not N patches.** Why: a locally correct patch can
   break a property the code holds somewhere else.
@@ -84,16 +87,16 @@ then commits and pushes to the same PR. Tell it:
 - **Commit and push after each group of findings.** Why: a run can die inside a fix round, and small
   commits make that round resumable.
 - **Append its calls to `.git/task-lifecycle/implementation-notes.md`.** Create the file if it is
-  missing (the already-built mode has no builder). Then refresh the PR body
+  missing (in the already-built mode, the first fix round creates it). Then refresh the PR body
   (`gh pr edit <n> --body-file …`), but only on a PR this run opened. A human's PR keeps its author's
   body.
 
-After the fixer is done, fetch the branch. Confirm that the fixer's final full SHA is an ancestor of
+After the builder is done, fetch the branch. Confirm that the builder's final full SHA is an ancestor of
 the remote head. Only then post `<!-- task-lifecycle-round:1 stage:complete head:<full-sha> -->`, with
 the unresolved count in the visible text. Never post the marker before the push and the ancestry check.
 A `stage:reviewed` marker with no valid `stage:complete` marker means the run died inside that
-round's fixer. Resume the fixer from the posted findings.
+round's fix. Send the posted findings to the builder (a new one if the original is gone).
 
 In round 2, review the updated diff again. Keep the fix commit SHA beside the outputs, because fix code
-is the least-reviewed code in the diff. Carry forward what you already deferred, so the fixer never
+is the least-reviewed code in the diff. Carry forward what you already deferred, so the builder never
 gets the same soft finding twice.

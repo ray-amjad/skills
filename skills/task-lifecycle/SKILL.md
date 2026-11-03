@@ -6,8 +6,17 @@ description: 'The default path for shipping a repo change as a reviewed and veri
 # Task lifecycle: build, review, fix, verify, ship
 
 You are the orchestrator. You keep your own hands off the code. Every hands-on step (build, review,
-fix, verify) runs in its own fresh subagent or process. You sequence them, carry artefacts between
+fix, verify) runs in a subagent or process, never in you. You sequence them, carry artefacts between
 them, report progress to the user, and **stop and ask the user before any merge**.
+
+**One builder owns the change.** Dispatch it once, and send every fix (a review finding, a failed
+flow, red CI) back to that same builder with SendMessage, so the branch has one author who knows why
+the code is the way it is. Reviewers and verifiers are always other, fresh agents that never saw the
+builder's reasoning, because a builder checking its own work proves nothing. Dispatch a new builder
+only when the original is gone (the run died, or this is a new session); brief it with the notes
+file, the branch and the open findings, and it owns every fix from then on. Why: on 6 real PRs
+replayed both ways (Nov 2026), fixes sent back to the builder won the blind comparison 4 to 2, caused
+no new P1s against 1, and cost 38% less than a fresh fixer per round.
 
 There is no plan step. Do not write a plan, a phase split or a `phases.md`, and do not dispatch a
 planner. The builder reads the code and decides as it goes.
@@ -41,7 +50,7 @@ cost the turn if unknown, budgets and gates, and traps from a real incident.
 
 ## Harness facts
 
-- **Wait for every subagent's result** (builders, fixers, verifiers). Never end a turn waiting on a
+- **Wait for every subagent's result** (builders, reviewers, verifiers). Never end a turn waiting on a
   background notification that may never arrive. Several foreground calls in one message still run
   at the same time.
 - **Subagent budget.** Each subagent starts with a large prefix and re-reads its whole context on
@@ -50,13 +59,13 @@ cost the turn if unknown, budgets and gates, and traps from a real incident.
 - **Run artefacts live in `.git/task-lifecycle/`** (`run-state.md`, `implementation-notes.md`). That
   folder is inside the clone but never committed, so none of it lands in the PR diff.
 
-## Implementation notes: one file, from the first builder to the last fixer
+## Implementation notes: one file, from the build to the last fix
 
 A spec never covers everything, and the builder meets the gaps first. It must decide on the spot. The
 notes file is where it records the call, so the decision does not hide in the diff. It is the
 builder's out: decide, write it down, keep building. Never stall, and never guess without a trace.
 
-Every builder and fixer appends to **`.git/task-lifecycle/implementation-notes.md`**. The builder
+The builder appends to **`.git/task-lifecycle/implementation-notes.md`**. The builder
 creates it:
 
 ```markdown
@@ -78,7 +87,7 @@ Anything the user should confirm or revise. Phrase each one as a question.
 One to three lines per entry: the file or symbol, the call, the reason. Write it at the moment of the
 decision. Do not pad it, and do not put in anything the diff already says. It has three readers: a
 resumed builder (step 2), the PR body (step 3, refreshed after each fix round), and you at step 6, where
-its *Open questions* go to the user.
+its *Open questions* go to the user. Every fix the builder makes appends to it too.
 
 ## Re-read the issue's state at every stage boundary
 
@@ -108,8 +117,8 @@ rebuild on top of an existing branch duplicates work and corrupts the diff. Read
   - `gh pr list --head <branch> --json number,url` returns a PR → step 3 is done;
   - `gh pr view <n> --comments` → the `task-lifecycle-round` stage markers from
     `references/review-round.md`. Advance past a round only for a `stage:complete` marker whose full
-    `head` SHA is an ancestor of the fetched PR head. If only `stage:reviewed` exists, resume that
-    round's fixer from the posted findings. Do not count ordinary review comments as rounds;
+    `head` SHA is an ancestor of the fetched PR head. If only `stage:reviewed` exists, send that
+    round's posted findings to the builder (a new one with the notes file, if the original is gone). Do not count ordinary review comments as rounds;
   - a `## Verified` section with real entries in the PR body → jump to step 6.
 
 The PR wins when the sources disagree. Tell the user "Resuming — picking up at <step>." and go there.
@@ -135,11 +144,14 @@ has no memory of the request:
 - keep the diff focused;
 - **commit as it goes**, in small coherent commits, so a run that dies mid-build leaves a resumable
   branch. Leave the branch checked out, and **do not open a PR**;
-- return: branch, repo path, what it built, files touched, and anything it could not finish.
+- return: branch, repo path, what it built, files touched, and anything it could not finish;
+- it is not done for good: review findings and failed flows will come back to it later in this run.
+
+Keep the builder's agent ID. Every fix in steps 4 and 5 goes to it through SendMessage.
 
 A builder that runs the type checker, linter and tests for its own area is ordinary care. If it
 returns with work left undone, dispatch one more builder on the same branch to finish it, with the
-first builder's summary and the notes file. **Never two builders at once**: they share one clone and
+first builder's summary and the notes file. That one owns the fixes from then on. **Never two builders at once**: they share one clone and
 one branch, and concurrent writers clobber each other. Do not review or fix before the PR: only a
 reviewer holding the whole change sees the defects that matter.
 
@@ -236,7 +248,9 @@ findings to the PR, say why you cannot push, and offer the fixes as a separate b
 `git fetch` and fast-forward before each fix round, because a human's branch can move. Never
 force-push.
 
-**3. No building.** A fixer here fixes findings. It does not finish a half-built feature. If the
+**3. No building.** There is no builder yet. Dispatch one agent for round 1's fixes with the diff,
+the findings and the notes file, and keep it: it is the builder for every later fix round and every
+verify fix. It fixes findings. It does not finish a half-built feature. If the
 reviewers say the change is *incomplete* (a missing migration, a UI with no handler), stop, report
 what is missing, and offer a full task-lifecycle run. "Review this *and* add X" is two jobs.
 
