@@ -72,11 +72,8 @@ If every reviewer you ran comes back clean, capture the fetched remote head. The
 
 ## Fix (back to the same builder, every round)
 
-Send the findings to **the builder that wrote the change**, with SendMessage, every round. It already
-knows the design, so it fixes the finding and the cases right next to it, not only the line the
-reviewer pointed at. Dispatch a new agent only when the builder is gone (the run died, or this is a
-new session); brief it with the findings, the notes file and the branch, and it is the builder from
-then on. It fixes exactly those findings, then commits and pushes to the same PR. Tell it:
+Send the findings back to **the builder that wrote the change**. It fixes those findings, then
+commits and pushes to the same PR. Tell it:
 
 - **Findings with one root cause get one design, not N patches.** Why: a locally correct patch can
   break a property the code holds somewhere else.
@@ -86,16 +83,12 @@ then on. It fixes exactly those findings, then commits and pushes to the same PR
   that it fits.
 - **Commit and push after each group of findings.** Why: a run can die inside a fix round, and small
   commits make that round resumable.
-- **Append its calls to `.git/task-lifecycle/implementation-notes.md`.** Create the file if it is
-  missing (in the already-built mode, the first fix round creates it). Then refresh the PR body
-  (`gh pr edit <n> --body-file …`), but only on a PR this run opened. A human's PR keeps its author's
-  body.
 
 After the builder is done, fetch the branch. Confirm that the builder's final full SHA is an ancestor of
 the remote head. Only then post `<!-- task-lifecycle-round:1 stage:complete head:<full-sha> -->`, with
 the unresolved count in the visible text. Never post the marker before the push and the ancestry check.
 A `stage:reviewed` marker with no valid `stage:complete` marker means the run died inside that
-round's fix. Send the posted findings to the builder (a new one if the original is gone).
+round's fix. Send the posted findings to the builder.
 
 In round 2, review the updated diff again. Keep the fix commit SHA beside the outputs, because fix code
 is the least-reviewed code in the diff. Carry forward what you already deferred, so the builder never
