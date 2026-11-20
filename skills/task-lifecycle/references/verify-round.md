@@ -10,7 +10,10 @@ the three agents below, and route on its verdict: PROVED is `passed`, BROKEN is 
 `could_not_boot`, and UNPROVEN (no answer key) is reported as unverified, with no fix loop. The rest of this page covers repos without one.
 
 List the flows the change touches. In the already-built mode, derive them from the diff. If the change
-has no runnable surface (docs, CI config, types, a pure refactor), say so and record nothing.
+has no runnable surface (docs, CI config, types), say so and record nothing. A change that must keep
+behaviour (a refactor, a migration, a library swap, a rewrite, an optimisation) is not that: it gets a
+differential flow, and code that must hold a rule over every input gets a property flow, both in
+`references/differential.md`.
 
 A verification is three subagents in a row:
 
@@ -57,7 +60,8 @@ The checker reports **which of five outcomes** the flow hit:
   Fix it in this PR only when the user asks, or when it is a few lines in a file this diff already
   changes. That fix shares the one fix round below. Say which defects you filed and which you fixed.
 - **`ran_wrong`** (an error, wrong output, a 200 with no row): tell the user. Then send the verify evidence
-  **back to the builder**, have it commit and push, and **re-verify once** with a fresh verifier. If
+  **back to the builder**, have it commit and push, and **re-verify once** with a fresh verifier. The re-verify builds on the first: its brief carries the
+first verdict, the checker's notes and the fix commit, and says to confirm that fix first. If
   the flow still fails, stop and report it. **One round is the cap** (two in the already-built mode),
   because each cycle boots a server and drives a browser.
 - **`could_not_boot`** (missing credential, missing env, the database would not start): **do not
