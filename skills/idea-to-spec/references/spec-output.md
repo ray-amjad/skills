@@ -18,10 +18,11 @@ Four sections, in this order. Add an extra only when the change needs it, and ne
 
 **2. Goals and non-goals**
 - **Goals:** numbered outcomes someone else could check.
-- **Non-goals:** what an eager agent would otherwise do, including behavior left unchanged on purpose and any tempting rejected alternative, one-line reason each. Items the user chose to defer are listed here, marked deferred.
+- **Non-goals:** scope. Extra work an eager agent would otherwise do: a nearby refactor, a feature flag, a tempting rejected alternative, one-line reason each. Items the user chose to defer are listed here, marked deferred.
+- Non-goal or constraint? A non-goal is work we won't do (breaking it adds something nobody asked for). A constraint is a rule the work must obey (breaking it damages something that already works). "Don't touch the mobile app" is a non-goal; "old mobile clients keep working" is a constraint.
 
 **3. Constraints**
-- **Invariants:** a table of invariant, where it is enforced or detected, machine or human. Cite the project's existing invariants by ID ("must still satisfy N-1"); never copy their text. An existing invariant this change breaks is said out loud and updated where it lives.
+- **Invariants:** what must stay true while the work happens, including behavior left unchanged on purpose. A table of invariant, where it is enforced or detected, machine or human. Cite the project's existing invariants by ID ("must still satisfy N-1"); never copy their text. An existing invariant this change breaks is said out loud and updated where it lives.
 - **Stop and ask / left to the agent:** when to halt and report, and which choices are explicitly the building agent's.
 - **Extras**, only when the change needs them:
   - **Compatibility** (existing callers, users, or data): the posture, plus a Surface / Before / After table.

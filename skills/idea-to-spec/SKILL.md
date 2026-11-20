@@ -45,6 +45,6 @@ The phases are gates. Never skip one silently.
 The user confirmed the playback, the spec is published where they chose, and it passes the same quick pass the user would give it:
 
 - **Starting point:** the why is a root cause, and every fact has a source and a date.
-- **Goals and non-goals:** each goal is an outcome someone else could check; each non-goal is something an eager agent would otherwise do.
-- **Constraints:** every invariant says where it is checked.
+- **Goals and non-goals:** each goal is an outcome someone else could check; each non-goal is extra work an eager agent would otherwise do ("don't build X").
+- **Constraints:** what must stay true while the work happens ("whatever you build, don't break Y"), and every invariant says where it is checked. A line that protects existing behavior is a constraint, not a non-goal.
 - **Proof:** every goal and every machine-checked invariant has a surface and a check, and every check must pass to merge.
