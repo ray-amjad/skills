@@ -189,6 +189,17 @@ You give it a rough idea. It does the homework first (reads the code, probes the
 
 The default path from "build this" to a merged change. One builder writes the change on its own branch and records every judgement call in implementation notes. Independent reviewers read the diff, a fixer resolves what they confirm (up to two rounds), and a verify step drives every changed flow against the real app and a real non-production database. It stops and asks before merging, then checks the live site after deploy. It also runs on a change that already exists: "put this branch through the loop".
 
+It gets sharper without adding reviewers:
+
+- **Cheap checks first.** The builder runs your CI's lint, type check and tests locally before the PR opens, so CI and review never pay to find a typo.
+- **REVIEW.md, from the default branch.** Your repo tells the reviewers what to check and what to skip, at the root and per folder. The rules are always read from the merged copy, never from the PR, so a change can't rewrite the rules that judge it.
+- **Each round builds on the last.** Round 2 gets a ledger of what round 1 found and how each item was settled, and reviews the fixes instead of starting over.
+- **Misses become rules.** A bug that gets past review and is caught later becomes a proposed REVIEW.md rule; the second time the pattern shows up, it opens a PR for you.
+- **Old code as the answer key.** A refactor or migration runs the base and the head on the same generated inputs and diffs them; invariant code gets property tests.
+- **Every commit is stamped.** `Verified: checks, /code-review, codex` or `Verified: none`, so you can ask git which changes were never proven.
+
+![The task-lifecycle loop: cheap checks run locally before the PR opens; review reads REVIEW.md from the default branch and each round gets the last round's ledger; verify drives the real app, with differential and property checks for code that must keep behaviour; misses become proposed REVIEW.md rules that land after merge; every commit carries a Verified line](assets/task-lifecycle-loop.png)
+
 ## License
 
 MIT. See [LICENSE](./LICENSE).

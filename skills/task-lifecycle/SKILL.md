@@ -52,12 +52,20 @@ your own words, the repo path, and any spec or issue (the spec is the source of 
 works on a **new branch**, keeps the diff focused, commits as it goes, and does not open a PR. It
 returns the branch, what it built, and anything it could not finish. Keep it: fixes come back to it.
 
+**Cheap checks first, on your own machine.** Opening a PR and every push to it start CI and often an
+automatic review, so a typo the builder could catch in ten seconds must never reach them. Use the
+repo's own checks, not a guess: read `.github/workflows/` for what CI runs on a pull request, plus the
+scripts it calls (type check, lint, format check, build, tests). The builder runs every one that works
+without CI-only secrets or services, all green, before the PR opens; before each later fix push, the
+type check, lint and the tests the fix touched. A check that can't run locally is named, never
+silently skipped, and the PR body lists the commands that ran.
+
 If it returns with work left undone, have it (or, if it is gone, a new builder on the same branch)
 finish. **Never two builders at once.** Do not review or fix before the PR.
 
 ## 3. Open the PR
 
-Push the branch and open the PR. The body has `## What changed and why` (with the issue link),
+Push the branch and open the PR (after the cheap checks above pass). The body has `## What changed and why` (with the issue link),
 `## Verified` (`Not verified — pending` until step 5), and `## Source` (the ask or spec).
 
 If the repo deploys previews, check the preview before step 6. Never call a change ready while its
@@ -73,6 +81,9 @@ Read `references/verify-round.md` now.
 
 ## 6. Confirm — and do not merge
 
+If anything got past review and was caught later (verify, CI, the user), turn it into a proposed review
+rule: `references/rule-candidates.md`.
+
 The final reply has the PR link and what you built, the review findings (fixed and unresolved), one
 line per verified flow in the checker's own outcome word, any open questions with your recommended
 answer, and then ONE question: "Merge PR #<n>?"
@@ -85,12 +96,15 @@ runs (for example "merge when checks are green and verify passed"). An unresolve
 
 When the user says "merge it":
 
-1. **Merge** (`gh pr merge <n> --squash --delete-branch`) and confirm the PR reads `MERGED`.
+1. **Merge** with a stamped message (`references/verification-stamp.md`):
+   `gh pr merge <n> --squash --delete-branch --body-file merge-commit.md`, and confirm the PR reads
+   `MERGED`.
 2. **Watch the deploy** of the merge commit to a terminal state, if the repo deploys on merge. Retry
    only an infrastructure fault.
 3. **Check the live site**: the changed flow plus the nearest flow it could break. Production is not a
    test database: do not write into anyone's account without a test account from the user.
-4. **Report** one line per flow. If the live check fails, ask whether to revert. **Never revert on
+4. **Report** one line per flow. If the live check fails, ask whether to revert, and record the miss
+   (`references/rule-candidates.md`). **Never revert on
    your own.**
 
 ## Already built: the loop without the build

@@ -1,6 +1,6 @@
 {
   "name": "ray-amjad-skills",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Ray Amjad's agent skills: turn an idea into a spec (idea-to-spec), ship it as a reviewed and verified PR (task-lifecycle), and make your coding agent prove its work (Prove It).",
   "author": { "name": "Ray Amjad", "url": "https://www.agenticcoding.school" },
   "homepage": "https://www.agenticcoding.school",
