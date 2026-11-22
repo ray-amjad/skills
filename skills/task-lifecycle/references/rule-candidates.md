@@ -13,7 +13,7 @@ a defect the user pointed out.
 
 Only if a reviewer could have seen it in the diff alone. Write it as a trigger plus a check: "when a
 change touches X, check Y". If it takes the running app to see, it is a verify rule instead: put it in
-the repo's `prove-<app>` skill or verification notes.
+the repo's verification skill or notes.
 
 ## The ledger: one GitHub issue per pattern
 

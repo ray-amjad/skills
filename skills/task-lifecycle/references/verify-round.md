@@ -5,9 +5,9 @@ subagent's result before you route.
 
 ## Run it
 
-**If the repo has a `prove-<app>` skill** (made by `/create-prove-it`), run it for this step instead of
-the three agents below, and route on its verdict: PROVED is `passed`, BROKEN is `ran_wrong`, BLOCKED is
-`could_not_boot`, and UNPROVEN (no answer key) is reported as unverified, with no fix loop. The rest of this page covers repos without one.
+**If the repo has its own verification skill** (one that boots and drives this app), run it for this step
+instead of the three agents below, and map its verdict onto the outcomes at the end of this page. The
+rest of this page covers repos without one.
 
 List the flows the change touches. In the already-built mode, derive them from the diff. If the change
 has no runnable surface (docs, CI config, types), say so and record nothing. A change that must keep

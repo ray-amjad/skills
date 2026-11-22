@@ -6,7 +6,7 @@ were proven and which were not. `none` is a value, never a missing line.
 ```
 Fix refund rounding in calculateRefund()
 
-Verified: checks, /code-review, codex, /prove-app
+Verified: checks, /code-review, codex, verify
 ```
 
 ```
@@ -19,7 +19,7 @@ Verified: none
 
 What ran **and passed**, comma separated: `checks` (the local checks CI runs, all green), each reviewer
 that ran with no `Important` finding left open (a `Nit` or a filed `Pre-existing` is fine) (`/code-review`, `codex`), and the verify step when every flow
-passed (`/prove-<app>`, or `verify` for the three-agent path). Something that ran and did not pass is
+passed (`verify`). Something that ran and did not pass is
 left off, and the PR says why. Nothing ran or passed: `Verified: none`. Never round up.
 
 - **A builder commit:** `Verified: checks` if it ran them, else `Verified: none`.
