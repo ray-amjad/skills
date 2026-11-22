@@ -1,8 +1,8 @@
 # Differential and property flows
 
 Two checks for code a click-through can't cover well. In both, the inputs come from a generator, not
-from the agent that wrote the code, so they don't share its blind spots. If the repo has a
-`prove-<app>` or `prove-<migration>` skill, it owns these; this page is for repos without one.
+from the agent that wrote the code, so they don't share its blind spots. If the repo has its
+own verification skill that already covers these, use it; this page is for repos without one.
 
 ## Differential: the old code is the answer key
 
